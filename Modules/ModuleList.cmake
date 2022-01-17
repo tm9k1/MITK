@@ -76,7 +76,3 @@ set(MITK_MODULES
   DICOMweb
   DeepLearningSegmentation
 )
-
-if(MITK_ENABLE_PIC_READER)
-  list(APPEND MITK_MODULES IpPicSupportIO)
-endif()
