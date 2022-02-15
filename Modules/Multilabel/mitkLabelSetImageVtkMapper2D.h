@@ -84,16 +84,14 @@ namespace mitk
       std::vector<vtkSmartPointer<vtkPolyDataMapper>> m_LayerMapperVector;
       std::vector<vtkSmartPointer<vtkImageData>> m_ReslicedImageVector;
       std::vector<vtkSmartPointer<vtkNeverTranslucentTexture>> m_LayerTextureVector;
+      std::vector<vtkSmartPointer<vtkMitkLevelWindowFilter>> m_LevelWindowFilterVector;
 
       std::vector<mitk::ExtractSliceFilter::Pointer> m_ReslicerVector;
 
-      vtkSmartPointer<vtkPolyData> m_OutlinePolyData;
-      /** \brief An actor for the outline */
-      vtkSmartPointer<vtkActor> m_OutlineActor;
-      /** \brief An actor for the outline shadow*/
-      vtkSmartPointer<vtkActor> m_OutlineShadowActor;
-      /** \brief A mapper for the outline */
-      vtkSmartPointer<vtkPolyDataMapper> m_OutlineMapper;
+      typedef std::pair<int, int> LayerLabelIndices;
+      std::map<LayerLabelIndices, vtkSmartPointer<vtkPolyData>> m_LabelOutlinePolyDataVector;
+      std::map<LayerLabelIndices, vtkSmartPointer<vtkActor>> m_LabelOutlineActorVector;
+      std::map<LayerLabelIndices, vtkSmartPointer<vtkPolyDataMapper>> m_LabelOutlineMapperVector;
 
       /** \brief Timestamp of last update of stored data. */
       itk::TimeStamp m_LastDataUpdateTime;
@@ -106,9 +104,16 @@ namespace mitk
 
       int m_NumberOfLayers;
 
-      /** \brief This filter is used to apply the level window to Grayvalue and RBG(A) images. */
-      // vtkSmartPointer<vtkMitkLevelWindowFilter> m_LevelWindowFilter;
-      std::vector<vtkSmartPointer<vtkMitkLevelWindowFilter>> m_LevelWindowFilterVector;
+      /** \brief Reset the data members of the local storage.
+       *
+       *  All maps and vectors are cleared and their visibility is set to false.
+       *  The layer actor vector and the label outline actor map are added
+       *  as part to the prop assembly.
+       *
+       * \param image The label set image from which to retrieve the number of
+       *              layers and the labelset of each layer.
+       */
+      void ResetLocalStorage(const LabelSetImage* image);
 
       /** \brief Default constructor of the local storage. */
       LocalStorage();
@@ -126,10 +131,22 @@ namespace mitk
     static void SetDefaultProperties(mitk::DataNode *node, mitk::BaseRenderer *renderer = nullptr, bool overwrite = false);
 
   protected:
-    /** \brief Transforms the actor to the actual position in 3D.
-      *   \param renderer The current renderer corresponding to the render window.
+
+    void CreateResliceVector(mitk::BaseRenderer* renderer, const mitk::DataNode* node);
+    void FillMask(mitk::BaseRenderer* renderer, mitk::DataNode* node);
+    void DrawContour(mitk::BaseRenderer* renderer, mitk::DataNode* node);
+
+    /** \brief Transforms the layer actor to the actual position in 3D.
+      * \param renderer The current renderer corresponding to the render window.
       */
-    void TransformActor(mitk::BaseRenderer *renderer);
+    void TransformLayerActor(mitk::BaseRenderer* renderer);
+
+    /** \brief Transforms the label outline actor to the actual position in 3D.
+      * \param renderer The current renderer corresponding to the render window.
+      * \param image    The label set image from which to retrieve the
+      *                 labelset of each layer.
+      */
+    void TransformLabelOutlineActor(mitk::BaseRenderer* renderer, mitk::LabelSetImage* image);
 
     /** \brief Generates a plane according to the size of the resliced image in milimeters.
       *
