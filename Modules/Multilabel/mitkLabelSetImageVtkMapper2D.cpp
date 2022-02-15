@@ -23,20 +23,15 @@ found in the LICENSE file.
 #include <mitkPlaneClipping.h>
 #include <mitkPlaneGeometry.h>
 #include <mitkProperties.h>
-#include <mitkResliceMethodProperty.h>
-#include <mitkTransferFunctionProperty.h>
-#include <mitkVtkResliceInterpolationProperty.h>
 
 // MITK Rendering
 #include "vtkMitkLevelWindowFilter.h"
-#include "vtkMitkThickSlicesFilter.h"
 #include "vtkNeverTranslucentTexture.h"
 
 // VTK
 #include <vtkCamera.h>
 #include <vtkCellArray.h>
 #include <vtkImageData.h>
-#include <vtkImageReslice.h>
 #include <vtkLookupTable.h>
 #include <vtkMatrix4x4.h>
 #include <vtkPlaneSource.h>
@@ -45,10 +40,8 @@ found in the LICENSE file.
 #include <vtkPolyDataMapper.h>
 #include <vtkProperty.h>
 #include <vtkTransform.h>
-//#include <vtkOpenGLTexture.h>
 
 // ITK
-#include <itkRGBAPixel.h>
 #include <mitkRenderingModeProperty.h>
 
 mitk::LabelSetImageVtkMapper2D::LabelSetImageVtkMapper2D()
@@ -61,7 +54,6 @@ mitk::LabelSetImageVtkMapper2D::~LabelSetImageVtkMapper2D()
 
 vtkProp *mitk::LabelSetImageVtkMapper2D::GetVtkProp(mitk::BaseRenderer *renderer)
 {
-  // return the actor corresponding to the renderer
   return m_LSH.GetLocalStorage(renderer)->m_Actors;
 }
 
@@ -466,31 +458,6 @@ vtkSmartPointer<vtkPolyData> mitk::LabelSetImageVtkMapper2D::CreateOutlinePolyDa
   return polyData;
 }
 
-void mitk::LabelSetImageVtkMapper2D::ApplyColor(mitk::BaseRenderer *renderer, const mitk::Color &color)
-{
-  LocalStorage *localStorage = this->GetLocalStorage(renderer);
-  localStorage->m_OutlineActor->GetProperty()->SetColor(color.GetRed(), color.GetGreen(), color.GetBlue());
-  localStorage->m_OutlineShadowActor->GetProperty()->SetColor(0, 0, 0);
-}
-
-void mitk::LabelSetImageVtkMapper2D::ApplyOpacity(mitk::BaseRenderer *renderer, int layer)
-{
-  LocalStorage *localStorage = this->GetLocalStorage(renderer);
-  float opacity = 1.0f;
-  this->GetDataNode()->GetOpacity(opacity, renderer, "opacity");
-  localStorage->m_LayerActorVector[layer]->GetProperty()->SetOpacity(opacity);
-  localStorage->m_OutlineActor->GetProperty()->SetOpacity(opacity);
-  localStorage->m_OutlineShadowActor->GetProperty()->SetOpacity(opacity);
-}
-
-void mitk::LabelSetImageVtkMapper2D::ApplyLookuptable(mitk::BaseRenderer *renderer, int layer)
-{
-  LocalStorage *localStorage = m_LSH.GetLocalStorage(renderer);
-  auto *input = dynamic_cast<mitk::LabelSetImage *>(this->GetDataNode()->GetData());
-  localStorage->m_LevelWindowFilterVector[layer]->SetLookupTable(
-    input->GetLabelSet(layer)->GetLookupTable()->GetVtkLookupTable());
-}
-
 void mitk::LabelSetImageVtkMapper2D::Update(mitk::BaseRenderer *renderer)
 {
   bool visible = true;
@@ -618,13 +585,9 @@ void mitk::LabelSetImageVtkMapper2D::SetDefaultProperties(mitk::DataNode *node,
   node->SetProperty("levelwindow", levWinProp, renderer);
 
   node->SetProperty("labelset.contour.active", BoolProperty::New(true), renderer);
-  node->SetProperty("labelset.contour.width", FloatProperty::New(2.0), renderer);
+  node->SetProperty("labelset.contour.width", FloatProperty::New(2.0f), renderer);
 
   Superclass::SetDefaultProperties(node, renderer, overwrite);
-}
-
-mitk::LabelSetImageVtkMapper2D::LocalStorage::~LocalStorage()
-{
 }
 
 mitk::LabelSetImageVtkMapper2D::LocalStorage::LocalStorage()
@@ -646,4 +609,8 @@ mitk::LabelSetImageVtkMapper2D::LocalStorage::LocalStorage()
 
   m_OutlineActor->SetVisibility(false);
   m_OutlineShadowActor->SetVisibility(false);
+}
+
+mitk::LabelSetImageVtkMapper2D::LocalStorage::~LocalStorage()
+{
 }

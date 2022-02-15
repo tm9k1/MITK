@@ -27,33 +27,24 @@ found in the LICENSE file.
 #include <vtkSmartPointer.h>
 
 class vtkActor;
-class vtkPolyDataMapper;
 class vtkPlaneSource;
 class vtkImageData;
-class vtkLookupTable;
-class vtkImageReslice;
-class vtkPoints;
-class vtkMitkThickSlicesFilter;
 class vtkPolyData;
+class vtkPolyDataMapper;
 class vtkMitkLevelWindowFilter;
 class vtkNeverTranslucentTexture;
 
 namespace mitk
 {
-
   /** \brief Mapper to resample and display 2D slices of a 3D labelset image.
    *
    * Properties that can be set for labelset images and influence this mapper are:
-   *
-   *   - \b "labelset.contour.active": (BoolProperty) whether to show only the active label as a contour or not
+   *   - \b "labelset.contour.active": (BoolProperty) whether to activate the label contour or not
    *   - \b "labelset.contour.width": (FloatProperty) line width of the contour
-
+   *
    * The default properties are:
-
-   *   - \b "labelset.contour.active", mitk::BoolProperty::New( true ), renderer, overwrite )
-   *   - \b "labelset.contour.width", mitk::FloatProperty::New( 2.0 ), renderer, overwrite )
-
-   * \ingroup Mapper
+   *   - \b "labelset.contour.active": mitk::BoolProperty::New(true)
+   *   - \b "labelset.contour.width": mitk::FloatProperty::New(2.0f)
    */
   class MITKMULTILABEL_EXPORT LabelSetImageVtkMapper2D : public VtkMapper
   {
@@ -64,36 +55,35 @@ namespace mitk
     /** Method for creation through the object factory. */
     itkNewMacro(Self);
 
-    /** \brief Get the Image to map */
-    const mitk::Image *GetInput(void);
-
-    /** \brief Checks whether this mapper needs to update itself and generate
-     * data. */
-    void Update(mitk::BaseRenderer *renderer) override;
-
     //### methods of MITK-VTK rendering pipeline
-    vtkProp *GetVtkProp(mitk::BaseRenderer *renderer) override;
+    /** \brief Returns the actor corresponding to the renderer */
+    vtkProp* GetVtkProp(mitk::BaseRenderer *renderer) override;
     //### end of methods of MITK-VTK rendering pipeline
 
-    /** \brief Internal class holding the mapper, actor, etc. for each of the 3 2D render windows */
-    /**
-       * To render axial, coronal, and sagittal, the mapper is called three times.
-       * For performance reasons, the corresponding data for each view is saved in the
-       * internal helper class LocalStorage. This allows rendering n views with just
-       * 1 mitkMapper using n vtkMapper.
-       * */
+    /** \brief Checks whether this mapper needs to update itself and generate
+     * data.
+     */
+    void Update(mitk::BaseRenderer* renderer) override;
+
+    /** \brief Internal class holding the mapper, actor, etc. for each of the 3 2D render windows
+     *
+     * To render axial, coronal, and sagittal, the mapper is called three times.
+     * For performance reasons, the corresponding data for each view is saved in the
+     * internal helper class LocalStorage. This allows rendering n views with just
+     * 1 mitkMapper using n vtkMapper.
+     */
     class MITKMULTILABEL_EXPORT LocalStorage : public mitk::Mapper::BaseLocalStorage
     {
     public:
+
+      vtkSmartPointer<vtkPlaneSource> m_Plane;
       vtkSmartPointer<vtkPropAssembly> m_Actors;
+      vtkSmartPointer<vtkPolyData> m_EmptyPolyData;
 
       std::vector<vtkSmartPointer<vtkActor>> m_LayerActorVector;
       std::vector<vtkSmartPointer<vtkPolyDataMapper>> m_LayerMapperVector;
       std::vector<vtkSmartPointer<vtkImageData>> m_ReslicedImageVector;
       std::vector<vtkSmartPointer<vtkNeverTranslucentTexture>> m_LayerTextureVector;
-
-      vtkSmartPointer<vtkPolyData> m_EmptyPolyData;
-      vtkSmartPointer<vtkPlaneSource> m_Plane;
 
       std::vector<mitk::ExtractSliceFilter::Pointer> m_ReslicerVector;
 
@@ -112,7 +102,7 @@ namespace mitk
       itk::TimeStamp m_LastPropertyUpdateTime;
 
       /** \brief mmPerPixel relation between pixel and mm. (World spacing).*/
-      mitk::ScalarType *m_mmPerPixel;
+      mitk::ScalarType* m_mmPerPixel;
 
       int m_NumberOfLayers;
 
@@ -135,11 +125,6 @@ namespace mitk
     /** \brief Set the default properties for general image rendering. */
     static void SetDefaultProperties(mitk::DataNode *node, mitk::BaseRenderer *renderer = nullptr, bool overwrite = false);
 
-    /** \brief This method switches between different rendering modes (e.g. use a lookup table or a transfer function).
-     * Detailed documentation about the modes can be found here: \link mitk::RenderingModeProperty \endlink
-     */
-    void ApplyRenderingMode(mitk::BaseRenderer *renderer);
-
   protected:
     /** \brief Transforms the actor to the actual position in 3D.
       *   \param renderer The current renderer corresponding to the render window.
@@ -157,16 +142,16 @@ namespace mitk
       * \note For the standard MITK view with three 2D render windows showing three
       * different slices, three such planes are generated. All these planes are generated
       * in the XY-plane (even if they depict a YZ-slice of the volume).
-      *
       */
     void GeneratePlane(mitk::BaseRenderer *renderer, double planeBounds[6]);
 
     /** \brief Generates a vtkPolyData object containing the outline of a given binary slice.
-        \param renderer Pointer to the renderer containing the needed information
-        \param image
-        \param pixelValue
-        \note This code is based on code from the iil library.
-        */
+      *
+      * \param renderer Pointer to the renderer containing the needed information
+      * \param image
+      * \param pixelValue
+      * \note This code is based on code from the iil library.
+      */
     vtkSmartPointer<vtkPolyData> CreateOutlinePolyData(mitk::BaseRenderer *renderer,
                                                        vtkImageData *image,
                                                        int pixelValue = 1);
@@ -186,42 +171,14 @@ namespace mitk
       * to the actual 3D position (cf. the following image).
       *
       * \image html cameraPositioning3D.png
-      *
       */
     void GenerateDataForRenderer(mitk::BaseRenderer *renderer) override;
 
     /** \brief This method uses the vtkCamera clipping range and the layer property
       * to calcualte the depth of the object (e.g. image or contour). The depth is used
-      * to keep the correct order for the final VTK rendering.*/
+      * to keep the correct order for the final VTK rendering.
+      */
     float CalculateLayerDepth(mitk::BaseRenderer *renderer);
-
-    /** \brief This method applies (or modifies) the lookuptable for all types of images.
-     * \warning To use the lookup table, the property 'Lookup Table' must be set and a 'Image Rendering.Mode'
-     * which uses the lookup table must be set.
-  */
-    void ApplyLookuptable(mitk::BaseRenderer *renderer, int layer);
-
-    /** \brief This method applies a color transfer function.
-     * Internally, a vtkColorTransferFunction is used. This is usefull for coloring continous
-     * images (e.g. float)
-     * \warning To use the color transfer function, the property 'Image Rendering.Transfer Function' must be set and a
-     * 'Image Rendering.Mode' which uses the color transfer function must be set.
-  */
-    void ApplyColorTransferFunction(mitk::BaseRenderer *renderer);
-
-    /**
-     * @brief ApplyLevelWindow Apply the level window for the given renderer.
-     * \warning To use the level window, the property 'LevelWindow' must be set and a 'Image Rendering.Mode' which uses
-     * the level window must be set.
-     * @param renderer Level window for which renderer?
-     */
-    void ApplyLevelWindow(mitk::BaseRenderer *renderer);
-
-    /** \brief Set the color of the image/polydata */
-    void ApplyColor(mitk::BaseRenderer *renderer, const mitk::Color &color);
-
-    /** \brief Set the opacity of the actor. */
-    void ApplyOpacity(mitk::BaseRenderer *renderer, int layer);
 
     /**
       * \brief Calculates whether the given rendering geometry intersects the
@@ -232,7 +189,7 @@ namespace mitk
       * 8 cornerpoints of the SlicedGeometry3D. If all distances have the same
       * sign (all positive or all negative) there is no intersection.
       * If the distances have different sign, there is an intersection.
-      **/
+      */
     bool RenderingGeometryIntersectsImage(const PlaneGeometry *renderingGeometry, SlicedGeometry3D *imageGeometry);
   };
 
