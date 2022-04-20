@@ -597,6 +597,8 @@ void QmitkLabelSetWidget::OnItemDoubleClicked(QTableWidgetItem *item)
 
 void QmitkLabelSetWidget::SelectLabelByPixelValue(mitk::Label::PixelType pixelValue)
 {
+  this->HighlightLabel(pixelValue);
+
   if (m_ProcessingManualSelection || !GetWorkingImage()->ExistLabel(pixelValue))
     return;
 
@@ -610,6 +612,39 @@ void QmitkLabelSetWidget::SelectLabelByPixelValue(mitk::Label::PixelType pixelVa
       return;
     }
   }
+}
+
+void QmitkLabelSetWidget::HighlightLabel(mitk::Label::PixelType pixelValue)
+{
+  const auto workingImage = this->GetWorkingImage();
+  if (nullptr == workingImage)
+  {
+    return;
+  }
+
+  unsigned int numberOfLayers = workingImage->GetNumberOfLayers();
+  for (unsigned int layer = 0; layer < numberOfLayers; layer++)
+  {
+    auto foundLabel = workingImage->GetLabel(m_ActivePixelValue, layer);
+    if (nullptr != foundLabel)
+    {
+      // reset the opacity of the currently highlighted label
+      foundLabel->SetOpacity(0.3);
+      auto foundLabelSet = workingImage->GetLabelSet(layer);
+      foundLabelSet->UpdateLookupTable(m_ActivePixelValue);
+    }
+  }
+
+  if (pixelValue == 0 || !workingImage->ExistLabel(pixelValue, workingImage->GetActiveLayer())) // skip exterior label
+  {
+    return;
+  }
+
+  m_ActivePixelValue = pixelValue;
+
+  // highlight the newly selected label
+  workingImage->GetLabel(m_ActivePixelValue, workingImage->GetActiveLayer())->SetOpacity(0.7);
+  workingImage->GetActiveLabelSet()->UpdateLookupTable(m_ActivePixelValue);
 }
 
 void QmitkLabelSetWidget::InsertTableWidgetItem(mitk::Label *label)
