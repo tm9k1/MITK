@@ -722,6 +722,11 @@ void QmitkLabelSetWidget::UpdateTableWidgetItem(QTableWidgetItem *item)
   mitk::LabelSetImage *workingImage = GetWorkingImage();
   mitk::Label *label = workingImage->GetLabel(item->data(Qt::UserRole).toInt(), workingImage->GetActiveLayer());
 
+  if (nullptr == label)
+  {
+    return;
+  }
+
   const mitk::Color &color = label->GetColor();
 
   QString styleSheet = "background-color:rgb(";
@@ -761,8 +766,7 @@ void QmitkLabelSetWidget::ResetAllTableWidgetItems()
     tableWidget->removeRow(0);
   }
 
-  mitk::DataNode * workingNode = GetWorkingNode();
-  auto workingImage = dynamic_cast<mitk::LabelSetImage*>(workingNode->GetData());
+  const auto workingImage = this->GetWorkingImage();
   if (nullptr == workingImage)
   {
     return;
