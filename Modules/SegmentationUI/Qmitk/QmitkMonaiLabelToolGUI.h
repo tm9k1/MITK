@@ -12,22 +12,18 @@ class MITKSEGMENTATIONUI_EXPORT QmitkMonaiLabelToolGUI : public QmitkMultiLabelS
   Q_OBJECT
 
 public:
-  mitkClassMacro(QmitknnUNetToolGUI, QmitkMultiLabelSegWithPreviewToolGUIBase);
+  mitkClassMacro(QmitkMonaiLabelToolGUI, QmitkMultiLabelSegWithPreviewToolGUIBase);
   itkFactorylessNewMacro(Self);
   itkCloneMacro(Self);
-
+/*
 protected slots :
 
   void OnPreviewBtnClicked();
+*/
 
-  void OnRegionSpinboxChanged(int);
-
-private slots:
-
-  void OnAdvancedSettingsButtonToggled(bool toggled);
 
 protected:
-  QmitkMonaiLabelToolGUI();
+  //QmitkMonaiLabelToolGUI();
   ~QmitkMonaiLabelToolGUI() = default;
 
   void ConnectNewTool(mitk::SegWithPreviewTool* newTool) override;
