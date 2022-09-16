@@ -1,7 +1,7 @@
 #include "QmitkMonaiLabelToolGUI.h"
 
 
-void QmitkOtsuTool3DGUI::ConnectNewTool(mitk::SegWithPreviewTool* newTool)
+void QmitkMonaiLabelToolGUI::ConnectNewTool(mitk::SegWithPreviewTool* newTool)
 {
   Superclass::ConnectNewTool(newTool);
 
@@ -9,15 +9,16 @@ void QmitkOtsuTool3DGUI::ConnectNewTool(mitk::SegWithPreviewTool* newTool)
   m_FirstPreviewComputation = true;
 }
 
-void QmitkOtsuTool3DGUI::InitializeUI(QBoxLayout* mainLayout)
+void QmitkMonaiLabelToolGUI::InitializeUI(QBoxLayout* mainLayout)
 {
+  /*
   m_Controls.setupUi(this);
   mainLayout->addLayout(m_Controls.verticalLayout);
   
-  Superclass::InitializeUI(mainLayout);
+  Superclass::InitializeUI(mainLayout);*/
 }
 
-void QmitkOtsuTool3DGUI::EnableWidgets(bool enabled)
+void QmitkMonaiLabelToolGUI::EnableWidgets(bool enabled)
 {
   Superclass::EnableWidgets(enabled);
 }
