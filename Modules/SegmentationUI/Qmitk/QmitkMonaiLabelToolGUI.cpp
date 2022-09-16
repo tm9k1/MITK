@@ -9,7 +9,7 @@ void QmitkMonaiLabelToolGUI::ConnectNewTool(mitk::SegWithPreviewTool* newTool)
   m_FirstPreviewComputation = true;
 }
 
-void QmitkMonaiLabelToolGUI::InitializeUI(QBoxLayout* mainLayout)
+void QmitkMonaiLabelToolGUI::InitializeUI(QBoxLayout* /*mainLayout*/)
 {
   /*
   m_Controls.setupUi(this);
