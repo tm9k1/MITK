@@ -28,6 +28,7 @@ Qmitk/QmitkMaskStampWidget.cpp
 Qmitk/QmitkStaticDynamicSegmentationDialog.cpp
 Qmitk/QmitkSurfaceBasedInterpolatorWidget.cpp
 Qmitk/QmitkSimpleLabelSetListWidget.cpp
+Qmitk/QmitkMultiLabelSegmentationTreeModel.cpp
 )
 
 set(MOC_H_FILES
@@ -61,6 +62,7 @@ Qmitk/QmitkMaskStampWidget.h
 Qmitk/QmitkStaticDynamicSegmentationDialog.h
 Qmitk/QmitkSurfaceBasedInterpolatorWidget.h
 Qmitk/QmitkSimpleLabelSetListWidget.h
+Qmitk/QmitkMultiLabelSegmentationTreeModel.h
 )
 
 set(UI_FILES
