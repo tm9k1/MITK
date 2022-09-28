@@ -2,9 +2,7 @@
 #define QmitkMonaiLabelToolGUI_h_Included
 
 #include "QmitkMultiLabelSegWithPreviewToolGUIBase.h"
-
-#include "ui_QmitkOtsuToolWidgetControls.h"
-
+#include "ui_QmitkMonaiLabelToolGUIControls.h"
 #include <MitkSegmentationUIExports.h>
 
 class MITKSEGMENTATIONUI_EXPORT QmitkMonaiLabelToolGUI : public QmitkMultiLabelSegWithPreviewToolGUIBase
@@ -15,15 +13,15 @@ public:
   mitkClassMacro(QmitkMonaiLabelToolGUI, QmitkMultiLabelSegWithPreviewToolGUIBase);
   itkFactorylessNewMacro(Self);
   itkCloneMacro(Self);
-/*
+
 protected slots :
 
   void OnPreviewBtnClicked();
-*/
+
 
 
 protected:
-  //QmitkMonaiLabelToolGUI();
+  QmitkMonaiLabelToolGUI();
   ~QmitkMonaiLabelToolGUI() = default;
 
   void ConnectNewTool(mitk::SegWithPreviewTool* newTool) override;
@@ -31,7 +29,7 @@ protected:
 
   void EnableWidgets(bool enabled) override;
 
-  Ui_QmitkOtsuToolWidgetControls m_Controls;
+  Ui_QmitkMonaiLabelToolGUIControls m_Controls;
 
   bool m_FirstPreviewComputation = true;
   EnableConfirmSegBtnFunctionType m_SuperclassEnableConfirmSegBtnFnc;

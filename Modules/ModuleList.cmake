@@ -12,6 +12,8 @@ set(MITK_MODULES
   LegacyGL
   AlgorithmsExt
   MapperExt
+  REST
+  RESTService
   DICOM
   DICOMQI
   DICOMTesting
@@ -71,7 +73,5 @@ set(MITK_MODULES
   Pharmacokinetics
   PharmacokineticsUI
   DICOMPM
-  REST
-  RESTService
   DICOMweb
 )

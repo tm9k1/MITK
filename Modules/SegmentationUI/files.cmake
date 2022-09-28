@@ -70,6 +70,7 @@ Qmitk/QmitkSurfaceStampWidgetGUIControls.ui
 Qmitk/QmitkMaskStampWidgetGUIControls.ui
 Qmitk/QmitkSurfaceBasedInterpolatorWidgetGUIControls.ui
 Qmitk/QmitknnUNetToolGUIControls.ui
+Qmitk/QmitkMonaiLabelToolGUIControls.ui
 Qmitk/QmitkEditableContourToolGUIControls.ui
 )
 

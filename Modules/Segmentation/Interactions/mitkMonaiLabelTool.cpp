@@ -10,24 +10,29 @@ found in the LICENSE file.
 
 ============================================================================*/
 
-#include "mitknnUnetTool.h"
+// MITK
+#include "mitkMonaiLabelTool.h"
 
+// us
 #include "mitkIOUtil.h"
-#include "mitkProcessExecutor.h"
-#include <itksys/SystemTools.hxx>
+#include "mitkRESTUtil.h"
+#include <nlohmann/json.hpp>
 #include <usGetModuleContext.h>
 #include <usModule.h>
 #include <usModuleContext.h>
 #include <usModuleResource.h>
+#include <usServiceReference.h>
 
 namespace mitk
 {
-  MITK_TOOL_MACRO(MITKSEGMENTATION_EXPORT, nnUNetTool, "nnUNet tool");
+  MITK_TOOL_MACRO(MITKSEGMENTATION_EXPORT, MonaiLabelTool, "MonaiLabel");
 }
 
 mitk::MonaiLabelTool::MonaiLabelTool()
 {
-  this->SetMitkTempDir(IOUtil::CreateTemporaryDirectory("mitk-XXXXXX"));
+  MITK_INFO << "MonaiLabelTool constrc";
+  InitializeRESTManager();
+  GetOverallInfo("https://httpbin.org/get");
 }
 
 void mitk::MonaiLabelTool::Activated()
@@ -36,63 +41,34 @@ void mitk::MonaiLabelTool::Activated()
   this->SetLabelTransferMode(LabelTransferMode::AllLabels);
 }
 
-
-us::ModuleResource mitk::MonaiLabelTool::GetIconResource() const
-{
-  us::Module *module = us::GetModuleContext()->GetModule();
-  us::ModuleResource resource = module->GetResource("AI_48x48.png");
-  return resource;
-}
-
 const char **mitk::MonaiLabelTool::GetXPM() const
 {
   return nullptr;
 }
 
+us::ModuleResource mitk::MonaiLabelTool::GetIconResource() const
+{
+  us::Module *module = us::GetModuleContext()->GetModule();
+  us::ModuleResource resource = module->GetResource("Otsu_48x48.png");
+  return resource;
+}
+
 const char *mitk::MonaiLabelTool::GetName() const
 {
-  return "MONAI";
+  return "MonaiLabel";
 }
 
-mitk::DataStorage *mitk::MonaiLabelTool::GetDataStorage()
+void mitk::MonaiLabelTool::DoUpdatePreview(const Image *inputAtTimeStep,
+                                           const Image * /*oldSegAtTimeStep*/,
+                                           LabelSetImage *previewImage,
+                                           TimeStepType timeStep)
 {
-  return this->GetToolManager()->GetDataStorage();
-}
-
-mitk::DataNode *mitk::MonaiLabelTool::GetRefNode()
-{
-  return this->GetToolManager()->GetReferenceData(0);
-}
-
-
-
-void mitk::nnUNetTool::DoUpdatePreview(const Image* inputAtTimeStep, const Image* /*oldSegAtTimeStep*/, LabelSetImage* previewImage, TimeStepType /*timeStep*/)
-{
-  std::string inDir, outDir, inputImagePath, outputImagePath, scriptPath;
-
-  ProcessExecutor::Pointer spExec = ProcessExecutor::New();
-  itk::CStyleCommand::Pointer spCommand = itk::CStyleCommand::New();
-  spCommand->SetCallback(&onPythonProcessEvent);
-  spExec->AddObserver(ExternalProcessOutputEvent(), spCommand);
-  ProcessExecutor::ArgumentListType args;
-
-  inDir = IOUtil::CreateTemporaryDirectory("nnunet-in-XXXXXX", this->GetMitkTempDir());
-  std::ofstream tmpStream;
-  inputImagePath = IOUtil::CreateTemporaryFile(tmpStream, m_TEMPLATE_FILENAME, inDir + IOUtil::GetDirectorySeparator());
-  tmpStream.close();
-  std::size_t found = inputImagePath.find_last_of(IOUtil::GetDirectorySeparator());
-  std::string fileName = inputImagePath.substr(found + 1);
-  std::string token = fileName.substr(0, fileName.find("_"));
-
+  std::string outputImagePath = "Z:/dataset/Task05_Prostate/labelsTr/prostate_00.nii.gz";
   try
   {
     Image::Pointer outputImage = IOUtil::Load<Image>(outputImagePath);
     previewImage->InitializeByLabeledImage(outputImage);
     previewImage->SetGeometry(inputAtTimeStep->GetGeometry());
-    m_InputBuffer = inputAtTimeStep;
-    m_OutputBuffer = mitk::LabelSetImage::New();
-    m_OutputBuffer->InitializeByLabeledImage(outputImage);
-    m_OutputBuffer->SetGeometry(inputAtTimeStep->GetGeometry());
   }
   catch (const mitk::Exception &e)
   {
@@ -102,4 +78,59 @@ void mitk::nnUNetTool::DoUpdatePreview(const Image* inputAtTimeStep, const Image
     MITK_ERROR << e.GetDescription();
     return;
   }
+}
+
+void mitk::MonaiLabelTool::InitializeRESTManager() // Don't call from constructor --ashis
+{
+  auto serviceRef = us::GetModuleContext()->GetServiceReference<mitk::IRESTManager>();
+  if (serviceRef)
+  {
+    m_RESTManager = us::GetModuleContext()->GetService(serviceRef);
+  }
+}
+
+void mitk::MonaiLabelTool::GetOverallInfo(std::string url)
+{
+  if (m_RESTManager != nullptr)
+  {
+    std::string jsonString;
+    bool fetched = false;
+    m_RESTManager->SendRequest(mitk::RESTUtil::convertToTString(url))
+      .then(
+        [=, &fetched](pplx::task<web::json::value> resultTask) /*It is important to use task-based continuation*/
+        {
+          try
+          {
+            // Get the result of the request
+            // This will throw an exception if the ascendent task threw an exception (e.g. invalid URI)
+            web::json::value result = resultTask.get();
+            m_Parameters = DataMapper(result);
+            fetched = true;
+          }
+          catch (const mitk::Exception &exception)
+          {
+            // Exceptions from ascendent tasks are catched here
+            MITK_ERROR << exception.what();
+            return;
+          }
+        });
+    
+    while (!fetched); /* wait until fetched*/
+  }
+  
+}
+
+std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::value &result)
+{
+  auto object = std::make_unique<DataObject>();
+  utility::string_t stringT = result.to_string();
+  std::string jsonString(stringT.begin(), stringT.end());
+  auto jsonObj = nlohmann::json::parse(jsonString);
+  if (jsonObj.is_discarded() || !jsonObj.is_object())
+  {
+    MITK_ERROR << "Could not parse \"" << jsonString << "\" as JSON object!";
+  }
+  MITK_INFO << "ashis inside mapper " << jsonObj["origin"].get<std::string>(); //remove
+  object->origin = jsonObj["origin"].get<std::string>();
+  return object;
 }
