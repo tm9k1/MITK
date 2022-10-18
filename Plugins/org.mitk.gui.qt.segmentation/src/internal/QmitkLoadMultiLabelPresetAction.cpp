@@ -42,15 +42,3 @@ void QmitkLoadMultiLabelPresetAction::Run(const QList<mitk::DataNode::Pointer> &
 void QmitkLoadMultiLabelPresetAction::SetDataStorage(mitk::DataStorage*)
 {
 }
-
-void QmitkLoadMultiLabelPresetAction::SetFunctionality(berry::QtViewPart*)
-{
-}
-
-void QmitkLoadMultiLabelPresetAction::SetSmoothed(bool)
-{
-}
-
-void QmitkLoadMultiLabelPresetAction::SetDecimated(bool)
-{
-}

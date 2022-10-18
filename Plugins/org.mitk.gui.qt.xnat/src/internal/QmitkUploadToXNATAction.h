@@ -33,9 +33,6 @@ public:
 
   // Empty setters (not needed)
   void SetDataStorage(mitk::DataStorage* dataStorage) override;
-  void SetSmoothed(bool smoothed) override;
-  void SetDecimated(bool decimated) override;
-  void SetFunctionality(berry::QtViewPart* functionality) override;
 
 private:
   std::string ReplaceSpecialChars(const std::string& input) const;

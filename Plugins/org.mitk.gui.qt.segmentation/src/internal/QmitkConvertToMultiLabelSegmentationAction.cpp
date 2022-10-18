@@ -66,18 +66,3 @@ void QmitkConvertToMultiLabelSegmentationAction::SetDataStorage(mitk::DataStorag
 {
   m_DataStorage = dataStorage;
 }
-
-void QmitkConvertToMultiLabelSegmentationAction::SetFunctionality(berry::QtViewPart* /*functionality*/)
-{
-  //not needed
-}
-
-void QmitkConvertToMultiLabelSegmentationAction::SetSmoothed(bool)
-{
-  //not needed
-}
-
-void QmitkConvertToMultiLabelSegmentationAction::SetDecimated(bool)
-{
-  //not needed
-}

@@ -76,22 +76,7 @@ void QmitkConvertMaskToLabelAction::Run( const QList<mitk::DataNode::Pointer> &s
   }
 }
 
-void QmitkConvertMaskToLabelAction::SetSmoothed(bool /*smoothed*/)
-{
- //not needed
-}
-
-void QmitkConvertMaskToLabelAction::SetDecimated(bool /*decimated*/)
-{
-  //not needed
-}
-
 void QmitkConvertMaskToLabelAction::SetDataStorage(mitk::DataStorage* /*dataStorage*/)
-{
-  //not needed
-}
-
-void QmitkConvertMaskToLabelAction::SetFunctionality(berry::QtViewPart* /*functionality*/)
 {
   //not needed
 }

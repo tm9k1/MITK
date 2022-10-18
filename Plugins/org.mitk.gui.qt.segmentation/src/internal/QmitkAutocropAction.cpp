@@ -170,22 +170,7 @@ mitk::Image::Pointer QmitkAutocropAction::IncreaseCroppedImageSize( mitk::Image:
   return paddedImage;
 }
 
-void QmitkAutocropAction::SetSmoothed(bool /*smoothed*/)
-{
- //not needed
-}
-
-void QmitkAutocropAction::SetDecimated(bool /*decimated*/)
-{
-  //not needed
-}
-
 void QmitkAutocropAction::SetDataStorage(mitk::DataStorage* /*dataStorage*/)
-{
-  //not needed
-}
-
-void QmitkAutocropAction::SetFunctionality(berry::QtViewPart* /*view*/)
 {
   //not needed
 }

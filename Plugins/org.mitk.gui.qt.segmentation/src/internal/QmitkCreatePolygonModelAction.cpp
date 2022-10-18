@@ -129,7 +129,3 @@ void QmitkCreatePolygonModelAction::SetDecimated(bool decimated)
 {
   m_IsDecimated = decimated;
 }
-
-void QmitkCreatePolygonModelAction::SetFunctionality(QtViewPart *)
-{
-}
