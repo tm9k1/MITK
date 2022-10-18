@@ -18,6 +18,7 @@ found in the LICENSE file.
 
 #include <mitkDataNodeSelection.h>
 #include <mitkIContextMenuAction.h>
+#include <mitkIExtendedContextMenuAction.h>
 
 #include <berryAbstractUICTKPlugin.h>
 #include <berryIContributor.h>
@@ -309,10 +310,11 @@ void QmitkDataNodeContextMenu::OnExtensionPointActionTriggered(QAction* action)
   if (dataStorage.IsNotNull())
     contextMenuAction->SetDataStorage(dataStorage);
 
-  if ("QmitkCreatePolygonModelAction" == configElement->GetAttribute("class"))
+  auto extendedContextMenuAction = dynamic_cast<mitk::IExtendedContextMenuAction*>(contextMenuAction);
+  if (nullptr != extendedContextMenuAction)
   {
-    contextMenuAction->SetSmoothed("true" == configElement->GetAttribute("smoothed"));
-    contextMenuAction->SetDecimated(m_SurfaceDecimation);
+    extendedContextMenuAction->SetSmoothed("true" == configElement->GetAttribute("smoothed"));
+    extendedContextMenuAction->SetDecimated(m_SurfaceDecimation);
   }
 
   contextMenuAction->Run(m_SelectedNodes);

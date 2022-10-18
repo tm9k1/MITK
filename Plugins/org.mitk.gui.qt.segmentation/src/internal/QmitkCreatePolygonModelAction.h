@@ -16,15 +16,13 @@ found in the LICENSE file.
 
 // Parent classes
 #include <QObject>
-#include <mitkIContextMenuAction.h>
+#include <mitkIExtendedContextMenuAction.h>
 
-// Data members
-#include <mitkDataNode.h>
-
-class MITK_QT_SEGMENTATION QmitkCreatePolygonModelAction : public QObject, public mitk::IContextMenuAction
+class MITK_QT_SEGMENTATION QmitkCreatePolygonModelAction : public QObject, public mitk::IExtendedContextMenuAction
 {
   Q_OBJECT
   Q_INTERFACES(mitk::IContextMenuAction)
+  Q_INTERFACES(mitk::IExtendedContextMenuAction)
 
 public:
   QmitkCreatePolygonModelAction();
