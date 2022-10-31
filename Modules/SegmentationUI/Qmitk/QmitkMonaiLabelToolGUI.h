@@ -17,6 +17,7 @@ public:
 protected slots :
 
   void OnPreviewBtnClicked();
+  void OnFetchBtnClicked();
 
 
 

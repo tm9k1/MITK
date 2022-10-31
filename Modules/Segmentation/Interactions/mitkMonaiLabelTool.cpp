@@ -16,12 +16,14 @@ found in the LICENSE file.
 // us
 #include "mitkIOUtil.h"
 #include "mitkRESTUtil.h"
+#include <map>
 #include <nlohmann/json.hpp>
 #include <usGetModuleContext.h>
 #include <usModule.h>
 #include <usModuleContext.h>
 #include <usModuleResource.h>
 #include <usServiceReference.h>
+#include <vector>
 
 namespace mitk
 {
@@ -30,9 +32,7 @@ namespace mitk
 
 mitk::MonaiLabelTool::MonaiLabelTool()
 {
-  MITK_INFO << "MonaiLabelTool constrc";
   InitializeRESTManager();
-  GetOverallInfo("https://httpbin.org/get");
 }
 
 void mitk::MonaiLabelTool::Activated()
@@ -109,15 +109,13 @@ void mitk::MonaiLabelTool::GetOverallInfo(std::string url)
           }
           catch (const mitk::Exception &exception)
           {
-            // Exceptions from ascendent tasks are catched here
             MITK_ERROR << exception.what();
             return;
           }
         });
-    
-    while (!fetched); /* wait until fetched*/
+
+    while (!fetched); /* wait until fetched*/ // add timeout
   }
-  
 }
 
 std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::value &result)
@@ -130,7 +128,79 @@ std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::va
   {
     MITK_ERROR << "Could not parse \"" << jsonString << "\" as JSON object!";
   }
-  MITK_INFO << "ashis inside mapper " << jsonObj["origin"].get<std::string>(); //remove
-  object->origin = jsonObj["origin"].get<std::string>();
+  MITK_INFO << jsonString;
+  MITK_INFO << "ashis inside mapper " << jsonObj["name"].get<std::string>(); // remove
+  object->name = jsonObj["name"].get<std::string>();
+  object->description = jsonObj["description"].get<std::string>();
+  object->labels = jsonObj["labels"].get<std::vector<std::string>>();
+
+  auto modelJsonMap = jsonObj["models"].get<std::map<std::string, nlohmann::json>>();
+  for (const auto &[_name, _jsonObj] : modelJsonMap)
+  {
+    if (_jsonObj.is_discarded() || !_jsonObj.is_object())
+    {
+      MITK_ERROR << "Could not parse JSON object.";
+    }
+    ModelObject modelInfo;
+    modelInfo.name = _name;
+    try
+    {
+      auto labels = _jsonObj["labels"].get<std::unordered_map<std::string, int>>();
+      modelInfo.labels = labels;
+    }
+    catch (const std::exception &)
+    {
+      auto labels = _jsonObj["labels"].get<std::vector<std::string>>();
+      for (const auto &label : labels)
+      {
+        modelInfo.labels[label] = -1; // Hardcode -1 as label id
+      }
+    }
+    modelInfo.type = _jsonObj["type"].get<std::string>();
+    modelInfo.dimension = _jsonObj["dimension"].get<int>();
+    modelInfo.description = _jsonObj["description"].get<std::string>();
+
+    object->models.push_back(modelInfo);
+  }
   return object;
+}
+
+
+std::vector<mitk::ModelObject> mitk::MonaiLabelTool::GetAutoSegmentationModels() 
+{
+  std::vector<mitk::ModelObject> autoModels;
+  for (mitk::ModelObject& model: m_Parameters->models)
+  {
+    if (m_AUTO_SEG_TYPE_NAME.find(model.type) != m_AUTO_SEG_TYPE_NAME.end())
+    {
+      autoModels.push_back(model);
+    }
+  }
+  return autoModels;
+}
+
+std::vector<mitk::ModelObject> mitk::MonaiLabelTool::GetInteractiveSegmentationModels()
+{
+  std::vector<mitk::ModelObject> interactiveModels;
+  for (mitk::ModelObject &model : m_Parameters->models)
+  {
+    if (m_INTERACTIVE_SEG_TYPE_NAME.find(model.type) != m_INTERACTIVE_SEG_TYPE_NAME.end())
+    {
+      interactiveModels.push_back(model);
+    }
+  }
+  return interactiveModels;
+}
+
+std::vector<mitk::ModelObject> mitk::MonaiLabelTool::GetScribbleSegmentationModels()
+{
+  std::vector<mitk::ModelObject> scribbleModels;
+  for (mitk::ModelObject &model : m_Parameters->models)
+  {
+    if (m_SCRIBBLE_SEG_TYPE_NAME.find(model.type) != m_SCRIBBLE_SEG_TYPE_NAME.end())
+    {
+      scribbleModels.push_back(model);
+    }
+  }
+  return scribbleModels;
 }

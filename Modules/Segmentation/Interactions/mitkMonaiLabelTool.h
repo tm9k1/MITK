@@ -16,6 +16,8 @@ found in the LICENSE file.
 #include <MitkSegmentationExports.h>
 #include <mitkIRESTManager.h>
 #include <memory>
+#include <unordered_map>
+#include <set>
 
 namespace us
 {
@@ -26,11 +28,26 @@ namespace mitk
 {
   // class Image;
 
+  struct ModelObject
+  {
+    std::string name;
+    std::string type;
+    std::unordered_map<std::string, int> labels;
+    int dimension;
+    std::string description;
+    std::unordered_map<bool, std::string> config; //TODO: find the full extent
+  };
+
   struct DataObject //rename --ashis
   {
     std::string URL;
     unsigned short port;
     std::string origin;
+    std::string name;
+    std::string description;
+    std::string version;
+    std::vector<std::string> labels;
+    std::vector<ModelObject> models;
   };
 
   class MITKSEGMENTATION_EXPORT MonaiLabelTool : public SegWithPreviewTool
@@ -47,6 +64,10 @@ namespace mitk
     void Activated() override;
     void GetOverallInfo(std::string);
     std::unique_ptr<DataObject> m_Parameters; //contains all parameters from Server to serve the GUI
+    std::vector<ModelObject> GetAutoSegmentationModels();
+    std::vector<ModelObject> GetInteractiveSegmentationModels();
+    std::vector<ModelObject> GetScribbleSegmentationModels();
+
 
 
   protected:
@@ -59,8 +80,10 @@ namespace mitk
   private:
     void InitializeRESTManager();
     std::unique_ptr<DataObject> DataMapper(web::json::value&);
-
     mitk::IRESTManager *m_RESTManager;
+    const std::set<std::string> m_AUTO_SEG_TYPE_NAME = {"segmentation"};
+    const std::set<std::string> m_SCRIBBLE_SEG_TYPE_NAME = {"scribbles"};
+    const std::set<std::string> m_INTERACTIVE_SEG_TYPE_NAME = {"deepedit", "deepgrow"};
 
   }; // class
 } // namespace
