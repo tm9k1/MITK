@@ -45,7 +45,6 @@ set(MITK_PLUGINS
   org.mitk.gui.qt.moviemaker:OFF
   org.mitk.gui.qt.pointsetinteraction:OFF
   org.mitk.gui.qt.pointsetinteractionmultispectrum:OFF
-  org.mitk.gui.qt.python:OFF
   org.mitk.gui.qt.remeshing:OFF
   org.mitk.gui.qt.segmentation:OFF
   org.mitk.gui.qt.deformableclippingplane:OFF
@@ -86,4 +85,5 @@ set(MITK_PLUGINS
   org.mitk.gui.qt.flowapplication:OFF
   org.mitk.gui.qt.flow.segmentation:OFF
   org.mitk.gui.qt.pixelvalue:ON
+  org.mitk.deeplearningsegmentation:ON
 )

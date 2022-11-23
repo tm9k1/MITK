@@ -2,46 +2,98 @@
 
 \page mitkPython_Overview Python Module
 
-\section python_sec1 Brief description
-The MITK Python Module provides a service class to interactively run python code (passed as C++ strings) and
-evaluate the results. Furthermore the service class offers means to convert an MITK Image to an ITK/OpenCV image in their wrapped python environment.
-<strong>Thus, one can process MITK images with Python Code from the OpenCV and ITK wrapping system</strong>.
-Furthermore one can convert an mitk::Surface to a vtkPolyData in its Python environment.<br />
-Under the hood, the MITK build system takes care that the wrapping build process for SimpleITK/VTK/OpenCV is correctly initiated and all paths are correctly set within MITK code.
-To use the features of the different toolkits make sure they are enabled during the superbuild process.
+\section python_sec1 Description
+The MITK Python Module provides a service class to run python code and evaluate the results. Furthermore, you can transfer data structures such as MITK images to your python environment for processing.
+The service implementation of the Python Module is the <code>PythonService</code> that uses the Python/C API to execute Python Code. Additionally, SWIG is used to wrap some MITK datatypes in python.
 
-\section python_sec2 Build Instructions
+\section python_build Build instructions
 
-Have a look at \ref python_sec3 on how to build MITK-Python with Qt5.
-The following CMake build options are available:
+To build MITK with the <code>PythonService</code>, the following CMake build options have to be enabled:
 <ul>
-  <li> MITK_USE_Python3
+	<li> <code>MITK_USE_Python3</code>
+	<li> <code>MITK_USE_SWIG</code>
+	<li> <code>WRAP_DEFAULT</code>
+	<li> <code>WRAP_PYTHON</code>
 </ul>
 
-\subsection python_ssec1 MITK_USE_Python3
-MITK_USE_Python3 enables the python wrapping in MITK. When the option is activated
-the build of the additional dependency SimpleITK is also enabled. The default behaviour is to use the python runtime from the system is used.
-Only Python 3.x is supported.
-The user can also specify it's own runtime by modifying the variables added by the
-FindPythonLib.cmake script. <strong>Note:</strong> A Python runtime with numpy is needed to use the MITK Python wrapping.
-When using this options all additional libraries installed in the python runtime will be available within the MITK-Python console.
+MITK_USE_Python3 enables the use of python in MITK. When the option is activated the build of the additional dependency SimpleITK is also enabled. The default behaviour is to use the python runtime from the system. Only Python 3.x is supported.
+The other options are all for wrapping MITK classes in Python classes.
 
-\section python_sec3 Suported Data Types
-The following data types in MITK are supported in the MITK Python Wrapping:
+\section python_setup Setup
+To get an instance of the <code>PythonService</code>, the following code is necessary:
+
+\code{.cpp}
+us::ModuleContext *context = us::GetModuleContext();
+std::string filter = "(Name=PythonService)";
+auto m_PythonServiceRefs = context->GetServiceReferences<mitk::IPythonService>(filter);
+auto *m_PythonService = dynamic_cast<mitk::IPythonService*> (context->GetService<mitk::IPythonService> (m_PythonServiceRefs.front()));
+\endcode 
+
+\section python_usage Usage
+In the following sections, some of the key features of the <code>PythonService</code> are described. 
+
+\subsection python_executing_code Executing python code
+Python code can be executed in two ways: 
 <ul>
-  <li> Image
-  <li> Surface
+	<li> With the method <code>Execute(const std::string &pythonCommand, int commandType)</code>, code can be executed in form of a C++ string. The variable <code>commandType</code> can have the following values:
+		<ul>
+			<li><code>IPythonService::SINGLE_LINE_COMMAND</code> for single statements
+			<li><code>IPythonService::MULTI_LINE_COMMAND</code> for larger code snippets
+			<li><code>IPythonService::EVAL_COMMAND</code> for isolated expressions, e.g. calculations.
+		</ul>
+		If no <code>commandType</code> is given, <code>IPythonService::MULTI_LINE_COMMAND</code> is the default.
+	<li> With the method <code>ExecuteScript(const std::string &pythonScript)</code>, whole python scripts can be executed. <code>pythonScript</code> is the path to the script which should be executed. 
+		If this file is located within the MITK sourcecode, the path can be determined by the method <code>FindFile(const char *filename, const char *pathInSourceDir)</code> which is implemented in the class <code>mitk::StandardFileLocations</code>. The following code shows an example of a script to be executed:
+		\code{.cpp}
+		std::string pythonFileName = "hello.py";
+		std::string fileName = mitk::StandardFileLocations::GetInstance()->FindFile( pythonFileName.c_str(), "Examples/Plugins/org.mitk.example.gui.pythonexample/resources");
+		m_PythonService->ExecuteScript(fileName);
+		\endcode	
 </ul>
 
-\subsection python_ssec4 Image
-Mitk Images can be transferred to python. The images are copied in-memory and
-transferred as a numpy array to Python and vice versa. The MITK python wrapping creates a SimpleITK image
-using the numpy array with the  properties of the MITK Image. Two dimensional images
-can also be transferred as an OpenCV image to python.
+\subsection python_access_variables Accessing variables
+The following methods are available for accessing varaibles:
+<ul>
+	<li><code>GetVariableStack()</code> returns all variables from the python context. The variables are returned as a list of the type <code>PythonVariable</code>. This contains for all variables the name, type and value as string format.
+	<li><code>DoesVariableExist(const std::string& name)</code> returns a boolean, whether a variable with a given <code>name</code> exists in the current python context.
+	<li><code>GetVariable (const std::string& name)</code> returns the value of a python variable with the given <code>name</code> as a string.
+</ul>
 
-\subsection python_ssec5 Surface
-Surfaces within mitk can be transferred as a vtkPolyData Object to Python.
-The surfaces are fully memory mapped. When changing a python wrapped surface
-the original object is also modified on the C++ side of MITK.
+\subsection python_transfer_images Transfer Images
 
- */
+With the <code>PythonService</code>, images can be transferred from C++ to the python context and vice versa.
+\note Currently, MITK images can be transferred and can be used in the python context either as MITK image or as SimpleITK image. If you want to use the MITK image data structure in the python context, you need to <code>import pyMITK</code> in your script.
+
+\subsubsection python_images_mitk_python Transfer images from C++ to python
+To transfer images from C++ to python, the following methods are provided:
+<ul>
+	<li><code>CopyToPythonAsSimpleItkImage(mitk::Image::Pointer image, const std::string &stdvarName)</code> to transfer a MITK image to python which should be used as SimpleITK image in the python context.
+	<li><code>CopyMITKImageToPython(mitk::Image::Pointer &image, const std::string &stdvarName)</code> to transfer a MITK image to python which should be used as MITK image in the python context as well.
+</ul>
+
+In this methods <code>image</code> defines the image which should be transferred and <code>stdvarName</code> the name of the image variable in the python context.
+
+\subsubsection python_images_python_mitk Transfer Images from python to C++
+To transfer images from python to C++, the following methods are provided:
+<ul>
+	<li><code>CopySimpleItkImageFromPython(const std::string &stdvarName)</code> for transferring a SimpleITK image from the python context to a MITK image in C++.
+	<li><code>CopyMITKImageFromPython(const std::string &stdvarName)</code> for transferring a MITK image from the python context to a MITK image in C++.
+</ul>
+The parameter <code>stdvarName</code> is the variable name of the image in the python context.
+
+\subsubsection python_multiple_images Transferring multiple images
+\note Multiple images can currently only be transferred from the python context to C++ and only, if they are provided as a list of MITK images in the python context.
+
+Sometimes, multiple images should be transferred from python to C++, e.g. when you have a multilabel segmentation and want to return the result as single images.
+If the images are stored in a list, this list can be transferred to C++, where it will be a <code>std::vector</code> of the type <code>mitk::Image::Pointer</code>.
+Therefore, the method <code>CopyListOfMITKImagesFromPython(const std::string, &listVarName)</code> exists. <code>listVarName</code> ist the name of the list variable of images in python, that should be transferred.
+
+\subsection python_observer Inform observer
+If a class should be notified as soon as a python command gets executed, the interface <code>PythonCommandObserver</code> has to be implemented. 
+Within this, only the method <code>CommandExecuted(const std::string& pythonCommand)</code> has to be implemented, which is called as soon as the python service executes a command.
+To register the observer, the method <code>AddPythonCommandObserver(PythonCommandObserver* observer)</code> has to be called with the implemented observer class as parameter.
+Analogously, the observer can be removed with the method <code>RemovePythonCommandObserver(PythonCommandObserver* observer)</code>
+
+With the method <code>GetNumberOfObserver()</code>, the number of currently registered observers can be determined.
+
+*/

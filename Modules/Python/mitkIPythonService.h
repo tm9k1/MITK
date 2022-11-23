@@ -21,7 +21,6 @@ found in the LICENSE file.
 #include <vector>
 
 
-class ctkAbstractPythonManager;
 
 namespace mitk
 {
@@ -66,26 +65,26 @@ namespace mitk
         /// Constant representing a single line command x which is run as "eval(x)"
         /// \see IPythonService::Execute()
         static const int EVAL_COMMAND = 2;
-
+        ///
         ///
         /// Executes a python command.
         /// \return A variant containing the return value as string of the python code (if any)
-        virtual std::string Execute( const std::string& pythonCommand, int commandType = SINGLE_LINE_COMMAND ) = 0;
+        virtual std::string Execute( const std::string& pythonCommand, int commandType= MULTI_LINE_COMMAND) = 0;
         ///
         /// Executes a python script.
-        virtual void ExecuteScript( const std::string& pathToPythonScript ) = 0;
+        virtual void ExecuteScript(const std::string &pathToPythonScript) = 0;
         ///
         /// \return true if the last call to Execute...() resulted in an error, false otherwise
         virtual bool PythonErrorOccured() const = 0;
         ///
         /// \return The list of variables in the __main__ namespace
-        virtual std::vector<PythonVariable> GetVariableStack() const = 0;
+        virtual std::vector<PythonVariable> GetVariableStack() = 0;
         ///
         /// \return true if a variable with this name is defined in the __main__ namespace, false otherwise
-        virtual bool DoesVariableExist(const std::string& name) const = 0;
+        virtual bool DoesVariableExist(const std::string& name) = 0;
         ///
         /// \return value of variable with this name as string, empty string if variable does not exist
-        virtual std::string GetVariable(const std::string& name) const = 0;
+        virtual std::string GetVariable(const std::string& name) = 0;
         ///
         /// adds a command observer which is informed after a command was issued with "Execute"
         virtual void AddPythonCommandObserver( PythonCommandObserver* observer ) = 0;
@@ -98,7 +97,9 @@ namespace mitk
         /// the the Execute() method of this service, e.g. the shell widget uses this function
         /// since it does not use Execute()
         virtual void NotifyObserver( const std::string& command ) = 0;
-
+        ///
+        /// \return the number of registered Observers
+        virtual int GetNumberOfObserver() = 0;
         ///
         /// \return true, if itk wrapping is available, false otherwise
         virtual bool IsSimpleItkPythonWrappingAvailable() = 0;
@@ -106,35 +107,24 @@ namespace mitk
         /// copies an mitk image as itk image into the python interpreter process
         /// the image will be available as "varName" in python if everythin worked
         /// \return true if image was copied, else false
-        virtual bool CopyToPythonAsSimpleItkImage( mitk::Image* image, const std::string& varName ) = 0;
+        virtual bool CopyToPythonAsSimpleItkImage( mitk::Image::Pointer image, const std::string& varName ) = 0;
         ///
         /// copies an itk image from the python process that is named "varName"
         /// \return the image or 0 if copying was not possible
         virtual mitk::Image::Pointer CopySimpleItkImageFromPython( const std::string& varName ) = 0;
-
         ///
-        /// \return true, if OpenCv wrapping is available, false otherwise
-        virtual bool IsOpenCvPythonWrappingAvailable() = 0;
+        /// copies an mitk image into the python interpreter process
+        /// the image will be available as "varName" in python if everythin worked
+        /// \return true if image was copied, else false
+        virtual bool CopyMITKImageToPython(mitk::Image::Pointer &image, const std::string &varName) = 0;
         ///
-        /// \see CopyToPythonAsItkImage()
-        virtual bool CopyToPythonAsCvImage( mitk::Image* image, const std::string& varName ) = 0;
+        /// copies an mitk image from the python process that is named "varName"
+        /// \return the image or 0 if copying was not possible
+        virtual mitk::Image::Pointer CopyMITKImageFromPython(const std::string &varName) = 0;
         ///
-        /// \see CopyCvImageFromPython()
-        virtual mitk::Image::Pointer CopyCvImageFromPython( const std::string& varName ) = 0;
-
-        ///
-        /// \return true, if vtk wrapping is available, false otherwise
-        virtual bool IsVtkPythonWrappingAvailable() = 0;
-        ///
-        /// \see CopyToPythonAsItkImage()
-        virtual bool CopyToPythonAsVtkPolyData( mitk::Surface* surface, const std::string& varName ) = 0;
-        ///
-        /// \see CopyCvImageFromPython()
-        virtual mitk::Surface::Pointer CopyVtkPolyDataFromPython( const std::string& varName ) = 0;
-
-        /// \return the ctk abstract python manager instance
-        virtual ctkAbstractPythonManager* GetPythonManager() = 0;
-
+        /// copies an list of mitk images from the python process that is named "listVarName"
+        /// \return the image or 0 if copying was not possible
+        virtual std::vector<mitk::Image::Pointer> CopyListOfMITKImagesFromPython(const std::string &listVarName) = 0;
         ///
         /// nothing to do here
         virtual ~IPythonService(); // leer in mitkIPythonService.cpp implementieren
@@ -142,9 +132,14 @@ namespace mitk
         // force us module loading by linking
         static std::string ForceLoadModule();
 
+        // adding search directories enables to call python code located in the given directory
+        // relative paths to the mitk root directory
         virtual void AddRelativeSearchDirs(std::vector< std::string > dirs) = 0;
 
-        virtual void AddAbsoluteSearchDirs(std::vector< std::string > dirs) = 0;
+        // absolute paths for directories to be added
+        virtual void AddAbsoluteSearchDirs(std::vector<std::string> dirs) = 0;
+
+        protected:
     };
 }
 

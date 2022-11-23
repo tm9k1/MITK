@@ -1,0 +1,195 @@
+/**
+
+\page DeepLearningSegmentationModule Deep-Learning-Segmentation Module
+
+\tableofcontents
+
+\section DLSeg_brief Description
+The MITK Deep-Learning-Segmentation Module enables developers to integrate their deep learning methods which should be developed in python in MITK. 
+The following guide should give an overview of the steps which have to be done to integrate a new deep learning method in MITK.
+
+\subsection DLSeg_MITKPrerequisites MITK Prerequisites
+To use the Deep-Learning-Segmentation Module you need to build MITK with Python enabled (MITK_USE_PYTHON3 on in CMake configurations). Furthermore, SWIG has to be enabled (MITK_USE_SWIG).
+
+\subsection DLSeg_TypicalWorkflow A typical deep learning workflow
+This guide assumes a certain workflow for the segmentation. This includes:
+
+<ol>
+  <li> There is an entry script which starts the segmentation process. From this script, all required variables (image to segment, path to the trained network,...) have to be passed to the called methods, if needed.
+  <li> The image for segmentation is a MITK or SimpleITK image.
+  <li> The segmentation itself is also a MITK or SimpleITK image.
+  <li> The trained network is passed as a string.
+  <li> There are no more parameters required for segmentation.
+</ol>
+
+\note segmentations with slightly different workflow could also be intergrated. For this, some methods have to be overwritten. A procedure for segmentations with additional parameters (point 5 above not fulfilled) is described later on.
+
+In the following sections, a tool called "My Segmentation" is integrated. The names in the code examples have to be adopted to the method you want to integrate.
+The deep learning interface consists of two parts: The module <code>MITKDeepLearningSegmentation</code>, where the algorithm itself is implemented and the plugin <code>org.mitk.deeplearningsegmentation</code>, where the GUI interaction is implemented.
+
+\section DLSeg_Module Implementation in the module
+
+In the first step, all required parts in the module folder DeepLearningSegmentation are implemented. For this, the following steps are necessary:
+ 
+<ol>
+  <li> Create a folder which contains the python code for segmentation. This folder might be called "my_seg_tool_algorithm" for instance. It contains the whole python repository which is needed for segmentation.
+  \warning There shouldn't be any larger files in the folder like results from experiments or the trained network. This would increase the size of the MITK repository too much and can lead to problems when pushing.
+  <li> Put the icon of the tool as svg file in the resource folder.
+  <li> Create a tool class. For this, you need to create a header file (MySegTool3D.h) and a cpp file (MySegTool3D.cpp). A typical structure for this files is shown in the following section. The files should be named with the syntax <method>SegTool3D.
+  <li> Edit the files.cmake file. You need to add the following files:
+    <ul>
+      <li> Add the cpp file MySegTool3D.cpp to the <code>CPP_FILES</code>
+      <li> Add the svg file to the <code>RESOURCE_FILES</code>
+    </ul>
+</ol>
+
+\subsection DLSeg_ToolClass Typical structure of the tool class
+
+The header file of the tool class typically has the following structure:
+
+\code{.h}
+#ifndef MySegTool3DGUI_h
+#define MySegTool3DGUI_h
+#include <org_mitk_deeplearningsegmentation_Export.h>
+#include"DeepLearningSegmentationGUI.h"
+#include"MySegTool3D.h"
+namespace Ui {
+class MySegTool3DGUI;
+}
+class DEEPLEARNINGSEGMENTATION_EXPORT MySegTool3DGUI : public DeepLearningSegmentationGUI{
+  Q_OBJECT
+public:
+  mitkClassMacro(MySegTool3DGUI, QmitkToolGUI)
+  itkFactorylessNewMacro(Self) 
+protected slots:
+    void OnNewToolAssociated(mitk::Tool *);
+};
+#endif // MySegTool3DGUI_h
+
+\endcode
+
+The cpp file of the tool class typically has the following structure:
+
+\code{.cpp}
+#include "MySegTool3D.h"
+namespace mitk{
+  MITK_TOOL_MACRO(MITKDEEPLEARNINGSEGMENTATION_EXPORT, MySegTool3D, "My Segmentation tool");
+}
+
+mitk::MySegTool3D::MySegTool3D() 
+    : DeepLearningSegmentationTool("My Segmentation", "icon_seg.svg", "my_seg_tool_algorithm", "input_image", "segment.py", "output_image", DeepLearningSegmentationTool::MITKImage, false){
+}
+
+mitk::MySegTool3D::~MySegTool3D() {
+}
+\endcode
+
+In the tool class, only some macros are defined and the implementation of the construcor with some arguments is necessary. 
+This arguments are:
+
+<ul>
+  <li> The name of the tool, which should be displayed in the workbench (e.g. "My Segmentation")
+  <li> The file name of the icon, which should be visible in the workbench (e.g. "icon_seg.svg")
+  <li> The name of the folder, in which the python code for execution lies (e.g. "my_seg_tool_algorithm"). This folder has to be in the module folder of the <code>MITKDeepLearningSegmentation</code> moudle.
+  <li> The variable name of the input image on python side (e.g. "input_image")
+  <li> The file name of the python script that is the entry point for the segmentation (e.g. "segment.py")
+  <li> The variable name of the output segmentation on python side (e.g. "output_image")
+  <li> The type of the images on python side (e.g. "DeepLearningSegmentationTool::MITKImage")
+  <li> (Optional) a boolean if the segmentation has multiple segments. The default value is <code>false</code>, which means a segmentation with only one segment.
+</ul>
+
+\section DLSeg_Plugin Implementation in the plugin
+
+In the second step, the necesarry parts in the plugin folder <code>org.mitk.deeplearningsegmentation</code> are implemented. Therefore, you should execute the following steps:
+
+<ol>
+  <li> Create a tool GUI class. For this, you need to create a header file (MySegTool3DGUI.h) and a cpp file (MySegTool3DGUI.cpp). A typical structure for this files is shown in the following section. The files should be named with the syntax <method>SegTool3DGUI.
+  <li> Edit the files.cmake file. You need to add the following files:
+    <ul>
+      <li> Add the cpp file MySegTool3DGUI.cpp to the <code>INTERNAL_CPP_FILES</code>
+      <li> Add src/internal/MySegTool3DGUI.h to the <code>MOC_H_FILES</code>
+    </ul>
+</ol>
+
+\subsection DLSeg_ToolGUIClass Typical structure of the tool GUI class
+
+The header file of the tool GUI class typically has the following structure:
+
+\code{.h}
+#ifndef MySegTool3DGUI_h
+#define MySegTool3DGUI_h
+#include <org_mitk_deeplearningsegmentation_Export.h>
+#include"DeepLearningSegmentationGUI.h"
+#include"MySegTool3D.h"
+namespace Ui {
+class MySegTool3DGUI;
+}
+class DEEPLEARNINGSEGMENTATION_EXPORT MySegTool3DGUI : public DeepLearningSegmentationGUI{
+  Q_OBJECT
+public:
+  mitkClassMacro(MySegTool3DGUI, QmitkToolGUI)
+  itkFactorylessNewMacro(Self) 
+protected slots:
+    void OnNewToolAssociated(mitk::Tool *);
+};
+#endif // MySegTool3DGUI_h
+
+\endcode
+
+The cpp file of the tool GUI class typically has the following structure:
+
+\code{.cpp}
+#include "MySegTool3DGUI.h"
+MITK_TOOL_GUI_MACRO(DEEPLEARNINGSEGMENTATION_EXPORT, MySegTool3DGUI, "")
+void MySegTool3DGUI::OnNewToolAssociated(mitk::Tool* tool) {
+  m_SegTool = dynamic_cast<mitk::MySegTool3D *>(tool);
+}
+\endcode
+
+In the tool GUI class, some macros are defined as well. Furthermore, the method <code>OnNewToolAssociated</code> has to be implemented. This is necessary to associate the tool GUI class with the according tool class.
+
+If your segmentation algoithm fulfills all points from a typical deep learning workflow, you are done with integration. If modification is needed, methods have to be overwritten. The following section explains with an example how to add an additional parameter.
+
+\section DLSeg_AdditionalParameter Add an additional parameter
+
+This section describes how to add an additional parameter for your segmentation. The process is explained with a threshold parameter of the type <code>double</code>. You have to execute the following steps:
+
+<ol>
+  <li> Implement a method for setting the parameter on the python side in the tool class. A method for setting the threshold might look like this:
+\code{.cpp}
+void mitk::MySegTool3D::SetThreshold(double threshold){
+  mitk::IPythonService::ForceLoadModule();
+  us::ModuleContext *context = us::GetModuleContext();
+  std::string filter = "(Name=PythonService)";
+  auto pythonServiceRefs = context->GetServiceReferences<mitk::IPythonService>(filter);
+  if (!pythonServiceRefs.empty()){
+    mitk::IPythonService *pythonService =
+      dynamic_cast<mitk::IPythonService*>( context->GetService<mitk::IPythonService>( pythonServiceRefs.front()));
+    pythonService->Execute("threshold = " + std::to_string(threshold));
+  }
+}
+\endcode
+  <li> Overwrite the method <code>SetUpUI()</code> for adding a new GUI element. In the code below a GUI element is created first, then it is added to the GUI and then the <code>SetUpUI()</code> of the base class is called. <code>m_ThresholdSpinBox</code> is a member variable in order to access the value of the threshold later on.
+\code{.cpp}
+void mitk::MySegTool3D::SetThreshold(double threshold){
+  mitk::IPythonService::ForceLoadModule();
+  us::ModuleContext *context = us::GetModuleContext();
+  std::string filter = "(Name=PythonService)";
+  auto pythonServiceRefs = context->GetServiceReferences<mitk::IPythonService>(filter);
+  if (!pythonServiceRefs.empty()){
+    mitk::IPythonService *pythonService =
+      dynamic_cast<mitk::IPythonService*>( context->GetService<mitk::IPythonService>( pythonServiceRefs.front()));
+    pythonService->Execute("threshold = " + std::to_string(threshold));
+  }
+}
+\endcode
+  <li> Overwrite the method <code>OnDoSegmentation()</code> in the tool GUI class. This is shown in the code below. First, the method from step 1 is called. Casting to the concrete type is neccessary in order to be able to access the method. The value of the GUI element is set in the method. Afterwards, the <code>OnDoSegmentation()</code> method of the base class is called to execute the segmentation itself.
+\code{.cpp}
+void MySegTool3DGUI::OnDoSegmentation() {
+  dynamic_cast<mitk::MySegTool3D *>(m_SegTool)->SetThreshold(m_ThresholdSpinBox->value());
+  DeepLearningSegmentationGUI::OnDoSegmentation();
+}
+\endcode
+</ol>
+
+*/

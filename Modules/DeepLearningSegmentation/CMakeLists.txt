@@ -1,0 +1,3 @@
+mitk_create_module(DeepLearningSegmentation
+  DEPENDS MitkSegmentationUI MitkPython
+)

@@ -50,7 +50,7 @@ set(MITK_MODULES
   DICOMUI
   Remeshing
   Python
-  QtPython
+  PythonService
   Persistence
   OpenIGTLinkUI
   IGTUI
@@ -73,4 +73,5 @@ set(MITK_MODULES
   REST
   RESTService
   DICOMweb
+  DeepLearningSegmentation
 )
