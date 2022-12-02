@@ -24,6 +24,8 @@ found in the LICENSE file.
 #include <usModuleResource.h>
 #include <usServiceReference.h>
 #include <vector>
+#include "cpprest/asyncrt_utils.h"
+#include "cpprest/http_client.h"
 
 namespace mitk
 {
@@ -93,18 +95,17 @@ void mitk::MonaiLabelTool::GetOverallInfo(std::string url)
 {
   if (m_RESTManager != nullptr)
   {
+    PostSegmentationRequest();
     std::string jsonString;
     bool fetched = false;
+    web::json::value result;
     m_RESTManager->SendRequest(mitk::RESTUtil::convertToTString(url))
       .then(
-        [=, &fetched](pplx::task<web::json::value> resultTask) /*It is important to use task-based continuation*/
+        [&](pplx::task<web::json::value> resultTask) /*It is important to use task-based continuation*/
         {
           try
           {
-            // Get the result of the request
-            // This will throw an exception if the ascendent task threw an exception (e.g. invalid URI)
-            web::json::value result = resultTask.get();
-            m_Parameters = DataMapper(result);
+            result = resultTask.get();
             fetched = true;
           }
           catch (const mitk::Exception &exception)
@@ -112,15 +113,18 @@ void mitk::MonaiLabelTool::GetOverallInfo(std::string url)
             MITK_ERROR << exception.what();
             return;
           }
-        });
-
-    while (!fetched); /* wait until fetched*/ // add timeout
+        })
+      .wait();
+    if (fetched)
+    {
+      m_Parameters = DataMapper(result);
+    }
   }
 }
 
-std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::value &result)
+std::unique_ptr<mitk::MonaiAppMetadata> mitk::MonaiLabelTool::DataMapper(web::json::value &result)
 {
-  auto object = std::make_unique<DataObject>();
+  auto object = std::make_unique<MonaiAppMetadata>();
   utility::string_t stringT = result.to_string();
   std::string jsonString(stringT.begin(), stringT.end());
   auto jsonObj = nlohmann::json::parse(jsonString);
@@ -128,7 +132,7 @@ std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::va
   {
     MITK_ERROR << "Could not parse \"" << jsonString << "\" as JSON object!";
   }
-  MITK_INFO << jsonString;
+  //MITK_INFO << jsonString;
   MITK_INFO << "ashis inside mapper " << jsonObj["name"].get<std::string>(); // remove
   object->name = jsonObj["name"].get<std::string>();
   object->description = jsonObj["description"].get<std::string>();
@@ -141,7 +145,7 @@ std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::va
     {
       MITK_ERROR << "Could not parse JSON object.";
     }
-    ModelObject modelInfo;
+    MonaiModelInfo modelInfo;
     modelInfo.name = _name;
     try
     {
@@ -166,41 +170,123 @@ std::unique_ptr<mitk::DataObject> mitk::MonaiLabelTool::DataMapper(web::json::va
 }
 
 
-std::vector<mitk::ModelObject> mitk::MonaiLabelTool::GetAutoSegmentationModels() 
+std::vector<mitk::MonaiModelInfo> mitk::MonaiLabelTool::GetAutoSegmentationModels() 
 {
-  std::vector<mitk::ModelObject> autoModels;
-  for (mitk::ModelObject& model: m_Parameters->models)
+  std::vector<mitk::MonaiModelInfo> autoModels;
+  if (nullptr != m_Parameters)
   {
-    if (m_AUTO_SEG_TYPE_NAME.find(model.type) != m_AUTO_SEG_TYPE_NAME.end())
+    for (mitk::MonaiModelInfo &model : m_Parameters->models)
     {
-      autoModels.push_back(model);
+      if (m_AUTO_SEG_TYPE_NAME.find(model.type) != m_AUTO_SEG_TYPE_NAME.end())
+      {
+        autoModels.push_back(model);
+      }
     }
   }
   return autoModels;
 }
 
-std::vector<mitk::ModelObject> mitk::MonaiLabelTool::GetInteractiveSegmentationModels()
+std::vector<mitk::MonaiModelInfo> mitk::MonaiLabelTool::GetInteractiveSegmentationModels()
 {
-  std::vector<mitk::ModelObject> interactiveModels;
-  for (mitk::ModelObject &model : m_Parameters->models)
+  std::vector<mitk::MonaiModelInfo> interactiveModels;
+  if (nullptr != m_Parameters)
   {
-    if (m_INTERACTIVE_SEG_TYPE_NAME.find(model.type) != m_INTERACTIVE_SEG_TYPE_NAME.end())
+    for (mitk::MonaiModelInfo &model : m_Parameters->models)
     {
-      interactiveModels.push_back(model);
+      if (m_INTERACTIVE_SEG_TYPE_NAME.find(model.type) != m_INTERACTIVE_SEG_TYPE_NAME.end())
+      {
+        interactiveModels.push_back(model);
+      }
     }
   }
   return interactiveModels;
 }
 
-std::vector<mitk::ModelObject> mitk::MonaiLabelTool::GetScribbleSegmentationModels()
+std::vector<mitk::MonaiModelInfo> mitk::MonaiLabelTool::GetScribbleSegmentationModels()
 {
-  std::vector<mitk::ModelObject> scribbleModels;
-  for (mitk::ModelObject &model : m_Parameters->models)
+  std::vector<mitk::MonaiModelInfo> scribbleModels;
+  if (nullptr != m_Parameters)
   {
-    if (m_SCRIBBLE_SEG_TYPE_NAME.find(model.type) != m_SCRIBBLE_SEG_TYPE_NAME.end())
+    for (mitk::MonaiModelInfo &model : m_Parameters->models)
     {
-      scribbleModels.push_back(model);
+      if (m_SCRIBBLE_SEG_TYPE_NAME.find(model.type) != m_SCRIBBLE_SEG_TYPE_NAME.end())
+      {
+        scribbleModels.push_back(model);
+      }
     }
   }
   return scribbleModels;
+}
+
+void mitk::MonaiLabelTool::PostSegmentationRequest() // return LabelSetImage ??
+{
+  // web::json::value result;
+  // web::json::value data;
+
+  std::string url = "http://localhost:8000/infer/deepedit_seg"; // + m_ModelName;
+  std::string filePath = "//vmware-host//Shared Folders//Downloads//spleen_58.nii.gz";
+  std::ifstream input(filePath, std::ios::binary);
+  if (!input)
+  {
+    MITK_WARN << "could not read file to POST";
+  }
+
+  std::vector<unsigned char> result;
+  std::vector<unsigned char> buffer;
+
+  // Stop eating new lines in binary mode!!!
+  input.unsetf(std::ios::skipws);
+
+  input.seekg(0, std::ios::end);
+  const std::streampos fileSize = input.tellg();
+  input.seekg(0, std::ios::beg);
+
+  MITK_INFO << fileSize << " bytes will be sent.";
+  buffer.reserve(fileSize); // file size
+  std::copy(
+    std::istream_iterator<unsigned char>(input), std::istream_iterator<unsigned char>(), std::back_inserter(buffer));
+
+
+  mitk::RESTUtil::ParamMap headers;
+  headers.insert(mitk::RESTUtil::ParamMap::value_type(U("accept"), U("application/json")));
+  // headers.insert(mitk::RESTUtil::ParamMap::value_type(U("Accept-Encoding"), U("gzip, deflate")));
+  headers.insert(mitk::RESTUtil::ParamMap::value_type(
+    // U("Content-Type"), U("multipart/related; type=\"application/dicom\"; boundary=boundary")));
+    U("Content-Type"), U("multipart/form-data; boundary=boundary")));
+
+  // in future more than one file should also be supported..
+  std::string head = "";
+  head += "\r\n--boundary";
+  head += "\r\nContent-Disposition: form-data; name=\"params\"\r\n\r\n{}";
+  head += "\r\n--boundary";
+  head += "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"spleen_58.nii.gz\"\r\n\r\n";
+
+  std::vector<unsigned char> bodyVector(head.begin(), head.end());
+
+  std::string tail = "";
+  tail += "\r\n--boundary";
+  tail += "\r\nContent-Disposition: form-data; name=\"label\"\r\n\r\n";
+  tail += "\r\n--boundary--\r\n";
+
+  result.insert(result.end(), bodyVector.begin(), bodyVector.end());
+  result.insert(result.end(), buffer.begin(), buffer.end());
+  result.insert(result.end(), tail.begin(), tail.end());
+
+  try
+  {
+    m_RESTManager
+      ->SendBinaryRequest(mitk::RESTUtil::convertToTString(url), mitk::IRESTManager::RequestType::Post, &result, headers)
+      .then(
+        [=](pplx::task<web::json::value> result) /* (web::json::value result)*/
+        {
+          MITK_INFO << "after send";
+          //MITK_INFO << mitk::RESTUtil::convertToUtf8(result.serialize());
+          //result.is_null();
+        })
+      .wait();
+  }
+  catch (std::exception &e)
+  {
+    MITK_WARN << e.what();
+  }
 }

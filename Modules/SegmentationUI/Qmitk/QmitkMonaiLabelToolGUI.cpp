@@ -52,16 +52,23 @@ void QmitkMonaiLabelToolGUI::OnFetchBtnClicked()
   auto tool = this->GetConnectedToolAs<mitk::MonaiLabelTool>();
   if (nullptr != tool)
   {
-    tool->GetOverallInfo("http://localhost:8000/info");
     QString urlString = m_Controls.urlBox->text();
     QUrl url(urlString);
     if (url.isValid() && !url.isLocalFile() && !url.hasFragment() && !url.hasQuery()) // sanity check
     {
       tool->GetOverallInfo(urlString.toStdString());
       // tool->GetOverallInfo("http://localhost:8000/info");
-      std::string response = tool->m_Parameters->name;
-      m_Controls.responseNote->setText(QString::fromStdString(response));
-      m_Controls.appBox->addItem(QString::fromStdString(response));
+      if (nullptr != tool->m_Parameters)
+      {
+        std::string response = tool->m_Parameters->name;
+        std::vector<mitk::MonaiModelInfo> autoModels = tool->GetAutoSegmentationModels();
+        m_Controls.responseNote->setText(QString::fromStdString(response));
+        m_Controls.appBox->addItem(QString::fromStdString(response));
+        for (auto &model : autoModels)
+        {
+          m_Controls.modelBox->addItem(QString::fromStdString(model.name));
+        }
+      }
     }
     else
     {

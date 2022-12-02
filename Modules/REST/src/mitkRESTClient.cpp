@@ -44,8 +44,12 @@ void mitk::RESTClient::CheckResponseContentType(web::http::http_response &respon
   }
 
   auto requestContentType = response.headers().content_type();
-  MITK_DEBUG << "Content Type: " << mitk::RESTUtil::convertToUtf8(requestContentType);
-  MITK_DEBUG << "Body: " << mitk::RESTUtil::convertToUtf8(response.to_string());
+  //MITK_DEBUG << "Content Type: " << mitk::RESTUtil::convertToUtf8(requestContentType);
+  MITK_INFO << "Content Type: " << mitk::RESTUtil::convertToUtf8(requestContentType);
+  //MITK_DEBUG << "Body: " << mitk::RESTUtil::convertToUtf8(response.to_string());
+  MITK_INFO << "Body: " << mitk::RESTUtil::convertToUtf8(response.to_string());
+  MITK_INFO << "BOdy 2: " << response.content_ready().get().extract_utf8string(true).get();
+  auto temp = response.content_ready().get().extract_vector().get();
   if (requestContentType.find(U("json")) != std::wstring::npos)
   {
     MITK_DEBUG << "Caution! The given response content type was '" << mitk::RESTUtil::convertToUtf8(requestContentType)

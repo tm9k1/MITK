@@ -28,7 +28,7 @@ namespace mitk
 {
   // class Image;
 
-  struct ModelObject
+  struct MonaiModelInfo
   {
     std::string name;
     std::string type;
@@ -38,7 +38,7 @@ namespace mitk
     std::unordered_map<bool, std::string> config; //TODO: find the full extent
   };
 
-  struct DataObject //rename --ashis
+  struct MonaiAppMetadata
   {
     std::string URL;
     unsigned short port;
@@ -47,7 +47,7 @@ namespace mitk
     std::string description;
     std::string version;
     std::vector<std::string> labels;
-    std::vector<ModelObject> models;
+    std::vector<MonaiModelInfo> models;
   };
 
   class MITKSEGMENTATION_EXPORT MonaiLabelTool : public SegWithPreviewTool
@@ -63,10 +63,16 @@ namespace mitk
 
     void Activated() override;
     void GetOverallInfo(std::string);
-    std::unique_ptr<DataObject> m_Parameters; //contains all parameters from Server to serve the GUI
-    std::vector<ModelObject> GetAutoSegmentationModels();
-    std::vector<ModelObject> GetInteractiveSegmentationModels();
-    std::vector<ModelObject> GetScribbleSegmentationModels();
+    std::unique_ptr<MonaiAppMetadata> m_Parameters; //contains all parameters from Server to serve the GUI
+    std::vector<MonaiModelInfo> GetAutoSegmentationModels();
+    std::vector<MonaiModelInfo> GetInteractiveSegmentationModels();
+    std::vector<MonaiModelInfo> GetScribbleSegmentationModels();
+    void PostSegmentationRequest();
+
+    itkSetMacro(ModelName, std::string);
+    itkGetConstMacro(ModelName, std::string);
+    itkSetMacro(URL, std::string);
+    itkGetConstMacro(URL, std::string);
 
 
 
@@ -79,11 +85,13 @@ namespace mitk
   
   private:
     void InitializeRESTManager();
-    std::unique_ptr<DataObject> DataMapper(web::json::value&);
+    std::unique_ptr<MonaiAppMetadata> DataMapper(web::json::value&);
     mitk::IRESTManager *m_RESTManager;
     const std::set<std::string> m_AUTO_SEG_TYPE_NAME = {"segmentation"};
     const std::set<std::string> m_SCRIBBLE_SEG_TYPE_NAME = {"scribbles"};
     const std::set<std::string> m_INTERACTIVE_SEG_TYPE_NAME = {"deepedit", "deepgrow"};
+    std::string m_ModelName;
+    std::string m_URL;
 
   }; // class
 } // namespace
