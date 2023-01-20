@@ -3,3 +3,7 @@ INCLUDE_DIRS Qmitk
 DEPENDS MitkSegmentation MitkQtWidgetsExt
 PACKAGE_DEPENDS PRIVATE CTK|CTKWidgets nlohmann_json
 )
+
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
