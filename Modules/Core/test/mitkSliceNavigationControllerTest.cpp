@@ -77,8 +77,8 @@ public:
   {
     auto sliceNavigationController = mitk::SliceNavigationController::New();
 
-    sliceNavigationController->SetInputWorldGeometry3D(m_Geometry3D);
-    sliceNavigationController->SetViewDirection(mitk::SliceNavigationController::Axial);
+    sliceNavigationController->SetInputWorldTimeGeometry(m_TimeGeometry);
+    sliceNavigationController->SetViewDirection(mitk::AnatomicalPlane::Axial);
     sliceNavigationController->Update();
 
     mitk::Point3D origin;
@@ -101,8 +101,8 @@ public:
   {
     auto sliceNavigationController = mitk::SliceNavigationController::New();
 
-    sliceNavigationController->SetInputWorldGeometry3D(m_Geometry3D);
-    sliceNavigationController->SetViewDirection(mitk::SliceNavigationController::Frontal);
+    sliceNavigationController->SetInputWorldTimeGeometry(m_TimeGeometry);
+    sliceNavigationController->SetViewDirection(mitk::AnatomicalPlane::Coronal);
     sliceNavigationController->Update();
 
     mitk::Point3D origin;
@@ -125,8 +125,8 @@ public:
   {
     auto sliceNavigationController = mitk::SliceNavigationController::New();
 
-    sliceNavigationController->SetInputWorldGeometry3D(m_Geometry3D);
-    sliceNavigationController->SetViewDirection(mitk::SliceNavigationController::Sagittal);
+    sliceNavigationController->SetInputWorldTimeGeometry(m_TimeGeometry);
+    sliceNavigationController->SetViewDirection(mitk::AnatomicalPlane::Sagittal);
     sliceNavigationController->Update();
 
     mitk::Point3D origin;
@@ -152,7 +152,7 @@ public:
     CPPUNIT_ASSERT(sliceNavigationController->GetSelectedTimePoint() == 0.);
 
     sliceNavigationController->SetInputWorldTimeGeometry(m_TimeGeometry);
-    sliceNavigationController->SetViewDirection(mitk::SliceNavigationController::Sagittal);
+    sliceNavigationController->SetViewDirection(mitk::AnatomicalPlane::Sagittal);
     sliceNavigationController->Update();
 
     CPPUNIT_ASSERT(sliceNavigationController->GetSelectedTimeStep() == 0);
@@ -161,15 +161,6 @@ public:
     sliceNavigationController->GetTime()->SetPos(2);
     CPPUNIT_ASSERT(sliceNavigationController->GetSelectedTimeStep() == 2);
     CPPUNIT_ASSERT(sliceNavigationController->GetSelectedTimePoint() == 30.0);
-
-    auto sliceNavigationController2 = mitk::SliceNavigationController::New();
-
-    sliceNavigationController2->SetInputWorldGeometry3D(m_Geometry3D);
-    sliceNavigationController2->SetViewDirection(mitk::SliceNavigationController::Sagittal);
-    sliceNavigationController2->Update();
-
-    CPPUNIT_ASSERT(sliceNavigationController2->GetSelectedTimeStep() == 0);
-    CPPUNIT_ASSERT(sliceNavigationController2->GetSelectedTimePoint() == 0.0);
   }
 
 private:

@@ -26,7 +26,6 @@ found in the LICENSE file.
 #include "usModuleContext.h"
 #include "usServiceReference.h"
 #include "vnl/vnl_vector.h"
-#include <itkAffineGeometryFrame.h>
 
 std::vector<mitk::PlaneGeometry::Pointer> m_Geometries;
 std::vector<unsigned int> m_SliceIndices;
@@ -45,8 +44,8 @@ int SetUpBeforeTest()
 
   // Creating different Geometries
   m_Geometries.reserve(100);
-  mitk::PlaneGeometry::PlaneOrientation views[] = {
-    mitk::PlaneGeometry::Axial, mitk::PlaneGeometry::Sagittal, mitk::PlaneGeometry::Frontal};
+  mitk::AnatomicalPlane views[] = {
+    mitk::AnatomicalPlane::Axial, mitk::AnatomicalPlane::Sagittal, mitk::AnatomicalPlane::Coronal};
   for (unsigned int i = 0; i < 100; ++i)
   {
     mitk::PlaneGeometry::Pointer plane = mitk::PlaneGeometry::New();
@@ -165,7 +164,7 @@ int testGetPlanePosition()
        !mitk::Equal(op->GetSpacing(), plane->GetSpacing()) ||
        !mitk::Equal(op->GetTransform()->GetOffset(), plane->GetIndexToWorldTransform()->GetOffset()) ||
        !mitk::Equal(op->GetDirectionVector().GetVnlVector(),
-                    plane->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2).normalize()) ||
+                    plane->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2).normalize().as_ref()) ||
        !mitk::MatrixEqualElementWise(op->GetTransform()->GetMatrix(), plane->GetIndexToWorldTransform()->GetMatrix()));
 
     if (error)
@@ -180,7 +179,7 @@ int testGetPlanePosition()
       MITK_INFO << "Op: " << op->GetDirectionVector()
                 << " plane: " << plane->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2) << "\n";
       MITK_TEST_CONDITION(mitk::Equal(op->GetDirectionVector().GetVnlVector(),
-                                      plane->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2)),
+                                      plane->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2).as_ref()),
                           "Checking for correct direction");
       MITK_TEST_CONDITION(
         mitk::MatrixEqualElementWise(op->GetTransform()->GetMatrix(), plane->GetIndexToWorldTransform()->GetMatrix()),

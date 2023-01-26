@@ -12,6 +12,8 @@ found in the LICENSE file.
 
 #include <mitkBaseApplication.h>
 
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
 #include <mitkExceptionMacro.h>
 #include <mitkLogMacros.h>
 #include <mitkProvisioningInfo.h>
@@ -95,6 +97,8 @@ namespace mitk
   const QString BaseApplication::ARG_STORAGE_DIR = "BlueBerry.storageDir";
   const QString BaseApplication::ARG_XARGS = "xargs";
   const QString BaseApplication::ARG_LOG_QT_MESSAGES = "Qt.logMessages";
+  const QString BaseApplication::ARG_SEGMENTATION_LABELSET_PRESET = "Segmentation.labelSetPreset";
+  const QString BaseApplication::ARG_SEGMENTATION_LABEL_SUGGESTIONS = "Segmentation.labelSuggestions";
 
   const QString BaseApplication::PROP_APPLICATION = "blueberry.application";
   const QString BaseApplication::PROP_FORCE_PLUGIN_INSTALL = BaseApplication::ARG_FORCE_PLUGIN_INSTALL;
@@ -506,6 +510,10 @@ namespace mitk
     if (nullptr != qApp)
       return;
 
+#ifdef Q_OS_LINUX
+    qputenv("QTWEBENGINE_CHROMIUM_FLAGS", "--single-process"); // See T29332
+#endif
+
     // If parameters have been set before, we have to store them to hand them
     // through to the application
     auto appName = this->getApplicationName();
@@ -558,7 +566,13 @@ namespace mitk
     QString storageDir = this->getCTKFrameworkStorageDir();
 
     if (!storageDir.isEmpty())
+    {
       d->m_FWProps[ctkPluginConstants::FRAMEWORK_STORAGE] = storageDir;
+
+      // Initialize core service preferences at the exact same location as their predecessor BlueBerry preferences
+      mitk::CoreServicePointer preferencesService(mitk::CoreServices::GetPreferencesService());
+      preferencesService->InitializeStorage(storageDir.toStdString() + "/data/3/prefs.xml");
+    }
 
     // 8. Set the library search paths and the pre-load library property
     this->initializeLibraryPaths();
@@ -788,6 +802,14 @@ namespace mitk
     Poco::Util::Option logQtMessagesOption(ARG_LOG_QT_MESSAGES.toStdString(), "", "log Qt messages");
     logQtMessagesOption.callback(Poco::Util::OptionCallback<Impl>(d, &Impl::handleBooleanOption));
     options.addOption(logQtMessagesOption);
+
+    Poco::Util::Option labelSetPresetOption(ARG_SEGMENTATION_LABELSET_PRESET.toStdString(), "", "use this label set preset for new segmentations");
+    labelSetPresetOption.argument("<filename>").binding(ARG_SEGMENTATION_LABELSET_PRESET.toStdString());
+    options.addOption(labelSetPresetOption);
+
+    Poco::Util::Option labelSuggestionsOption(ARG_SEGMENTATION_LABEL_SUGGESTIONS.toStdString(), "", "use this list of predefined suggestions for segmentation labels");
+    labelSuggestionsOption.argument("<filename>").binding(ARG_SEGMENTATION_LABEL_SUGGESTIONS.toStdString());
+    options.addOption(labelSuggestionsOption);
 
     Poco::Util::Application::defineOptions(options);
   }

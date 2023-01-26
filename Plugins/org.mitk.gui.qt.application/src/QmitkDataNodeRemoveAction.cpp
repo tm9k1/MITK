@@ -16,10 +16,9 @@ found in the LICENSE file.
 // qt
 #include <QMessageBox>
 
-// berry
-#include <berryIPreferences.h>
-#include <berryIPreferencesService.h>
-#include <berryPlatform.h>
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
 
 namespace RemoveAction
 {
@@ -61,9 +60,8 @@ namespace RemoveAction
         dataStorage->Remove(dataNode);
       }
 
-      berry::IPreferencesService* prefService = berry::Platform::GetPreferencesService();
-      berry::IPreferences::Pointer preferencesNode =
-        prefService->GetSystemPreferences()->Node(QmitkDataNodeGlobalReinitAction::ACTION_ID);
+      auto* prefService = mitk::CoreServices::GetPreferencesService();
+      auto* preferencesNode = prefService->GetSystemPreferences()->Node(QmitkDataNodeGlobalReinitAction::ACTION_ID.toStdString());
 
       bool globalReinit = preferencesNode->GetBool("Call global reinit if node is deleted", true);
       if (globalReinit)
@@ -99,16 +97,20 @@ void QmitkDataNodeRemoveAction::InitializeAction()
 
 void QmitkDataNodeRemoveAction::OnActionTriggered(bool /*checked*/)
 {
-  if (m_WorkbenchPartSite.Expired())
+  auto workbenchPartSite = m_WorkbenchPartSite.Lock();
+
+  if (workbenchPartSite.IsNull())
   {
     return;
   }
 
-  if (m_DataStorage.IsExpired())
+  auto dataStorage = m_DataStorage.Lock();
+
+  if (dataStorage.IsNull())
   {
     return;
   }
 
   auto selectedNodes = GetSelectedNodes();
-  RemoveAction::Run(m_WorkbenchPartSite.Lock(), m_DataStorage.Lock(), selectedNodes, m_Parent);
+  RemoveAction::Run(workbenchPartSite, dataStorage, selectedNodes, m_Parent);
 }

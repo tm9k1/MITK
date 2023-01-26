@@ -12,8 +12,10 @@ found in the LICENSE file.
 
 #include "QmitkMxNMultiWidgetEditor.h"
 
-#include <berryIPreferencesService.h>
-#include <berryIPreferences.h>
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
+
 #include <berryIWorkbenchPage.h>
 #include <berryIWorkbenchPartConstants.h>
 #include <berryUIException.h>
@@ -62,13 +64,68 @@ QmitkMxNMultiWidgetEditor::~QmitkMxNMultiWidgetEditor()
   GetSite()->GetPage()->RemovePartListener(this);
 }
 
+berry::IPartListener::Events::Types QmitkMxNMultiWidgetEditor::GetPartEventTypes() const
+{
+  return Events::CLOSED | Events::OPENED | Events::HIDDEN | Events::VISIBLE;
+}
+
+void QmitkMxNMultiWidgetEditor::PartClosed(const berry::IWorkbenchPartReference::Pointer& partRef)
+{
+  if (partRef->GetId() == QmitkMxNMultiWidgetEditor::EDITOR_ID)
+  {
+    const auto& multiWidget = dynamic_cast<QmitkMxNMultiWidget*>(GetMultiWidget());
+    if (nullptr != multiWidget)
+    {
+      multiWidget->RemovePlanesFromDataStorage();
+      multiWidget->ActivateMenuWidget(false);
+    }
+  }
+}
+
+void QmitkMxNMultiWidgetEditor::PartOpened(const berry::IWorkbenchPartReference::Pointer& partRef)
+{
+  if (partRef->GetId() == QmitkMxNMultiWidgetEditor::EDITOR_ID)
+  {
+    const auto& multiWidget = dynamic_cast<QmitkMxNMultiWidget*>(GetMultiWidget());
+    if (nullptr != multiWidget)
+    {
+      multiWidget->AddPlanesToDataStorage();
+      multiWidget->ActivateMenuWidget(true);
+    }
+  }
+}
+
+void QmitkMxNMultiWidgetEditor::PartHidden(const berry::IWorkbenchPartReference::Pointer& partRef)
+{
+  if (partRef->GetId() == QmitkMxNMultiWidgetEditor::EDITOR_ID)
+  {
+    const auto& multiWidget = dynamic_cast<QmitkMxNMultiWidget*>(GetMultiWidget());
+    if (nullptr != multiWidget)
+    {
+      multiWidget->ActivateMenuWidget(false);
+    }
+  }
+}
+
+void QmitkMxNMultiWidgetEditor::PartVisible(const berry::IWorkbenchPartReference::Pointer& partRef)
+{
+  if (partRef->GetId() == QmitkMxNMultiWidgetEditor::EDITOR_ID)
+  {
+    const auto& multiWidget = dynamic_cast<QmitkMxNMultiWidget*>(GetMultiWidget());
+    if (nullptr != multiWidget)
+    {
+      multiWidget->ActivateMenuWidget(true);
+    }
+  }
+}
+
 void QmitkMxNMultiWidgetEditor::OnLayoutSet(int row, int column)
 {
-  const auto &multiWidget = dynamic_cast<QmitkMxNMultiWidget *>(GetMultiWidget());
+  const auto &multiWidget = dynamic_cast<QmitkMxNMultiWidget*>(GetMultiWidget());
   if (nullptr != multiWidget)
   {
-    multiWidget->SetCrosshairVisibility(true);
     QmitkAbstractMultiWidgetEditor::OnLayoutSet(row, column);
+    multiWidget->AddPlanesToDataStorage();
   }
 }
 
@@ -109,7 +166,7 @@ void QmitkMxNMultiWidgetEditor::CreateQtPartControl(QWidget* parent)
   QHBoxLayout *layout = new QHBoxLayout(parent);
   layout->setContentsMargins(0, 0, 0, 0);
 
-  berry::IBerryPreferences *preferences = dynamic_cast<berry::IBerryPreferences *>(GetPreferences().GetPointer());
+  auto* preferences = this->GetPreferences();
 
   auto multiWidget = GetMultiWidget();
   if (nullptr == multiWidget)
@@ -123,10 +180,6 @@ void QmitkMxNMultiWidgetEditor::CreateQtPartControl(QWidget* parent)
       layout->addWidget(m_Impl->m_InteractionSchemeToolBar);
     }
     m_Impl->m_InteractionSchemeToolBar->SetInteractionEventHandler(multiWidget->GetInteractionEventHandler());
-
-    // show / hide PACS mouse mode interaction scheme toolbar
-    bool PACSInteractionScheme = preferences->GetBool("PACS like mouse interaction", false);
-    m_Impl->m_InteractionSchemeToolBar->setVisible(PACSInteractionScheme);
 
     multiWidget->SetDataStorage(GetDataStorage());
     multiWidget->InitializeMultiWidget();
@@ -154,7 +207,7 @@ void QmitkMxNMultiWidgetEditor::CreateQtPartControl(QWidget* parent)
   OnPreferencesChanged(preferences);
 }
 
-void QmitkMxNMultiWidgetEditor::OnPreferencesChanged(const berry::IBerryPreferences* preferences)
+void QmitkMxNMultiWidgetEditor::OnPreferencesChanged(const mitk::IPreferences* preferences)
 {
   const auto& multiWidget = GetMultiWidget();
   if (nullptr == multiWidget)
@@ -165,6 +218,9 @@ void QmitkMxNMultiWidgetEditor::OnPreferencesChanged(const berry::IBerryPreferen
   // update decoration preferences
   //m_Impl->m_MultiWidgetDecorationManager->DecorationPreferencesChanged(preferences);
 
+  int crosshairGapSize = preferences->GetInt("crosshair gap size", 32);
+  multiWidget->SetCrosshairGap(crosshairGapSize);
+
   // zooming and panning preferences
   bool constrainedZooming = preferences->GetBool("Use constrained zooming and panning", true);
   mitk::RenderingManager::GetInstance()->SetConstrainedPanningZooming(constrainedZooming);
@@ -174,6 +230,5 @@ void QmitkMxNMultiWidgetEditor::OnPreferencesChanged(const berry::IBerryPreferen
     mitk::InteractionSchemeSwitcher::PACSStandard :
     mitk::InteractionSchemeSwitcher::MITKStandard);
 
-  mitk::RenderingManager::GetInstance()->InitializeViewsByBoundingObjects(GetDataStorage());
   mitk::RenderingManager::GetInstance()->RequestUpdateAll();
 }

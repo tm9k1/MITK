@@ -40,6 +40,12 @@ namespace mitk
   class Mapper;
 
   /**
+   * \brief Definition of an itk::Event that is invoked when
+   * a DataInteractor is set on this DataNode.
+   */
+  itkEventMacroDeclaration(InteractorChangedEvent, itk::AnyEvent);
+
+  /**
    * \brief Class for nodes of the DataTree
    *
    * Contains the data (instance of BaseData), a list of mappers, which can
@@ -63,11 +69,6 @@ namespace mitk
     typedef std::vector<MapOfPropertyLists::key_type> PropertyListKeyNames;
     typedef std::set<std::string> GroupTagList;
 
-    /**
-     * \brief Definition of an itk::Event that is invoked when
-     * a DataInteractor is set on this DataNode.
-     */
-    itkEventMacro(InteractorChangedEvent, itk::AnyEvent)
     mitkClassMacroItkParent(DataNode, itk::DataObject);
     itkFactorylessNewMacro(Self);
 
@@ -398,20 +399,40 @@ namespace mitk
     /**
      * \brief Extra convenience access method to set the name of an object.
      *
-     * The name will be stored in the non-renderer-specific PropertyList in a StringProperty named "name".
+     * If the data has already a "name" property, the name will be stored in it. Otherwise, the name will be stored in
+     * the non-renderer-specific PropertyList in a StringProperty named "name".
      */
     virtual void SetName(const char *name)
     {
       if (name == nullptr)
         return;
-      this->SetProperty("name", StringProperty::New(name));
+
+      auto* data = this->GetData();
+
+      if (nullptr != data)
+      {
+        auto property = data->GetProperty("name");
+
+        if (property.IsNotNull())
+        {
+          auto* stringProperty = dynamic_cast<StringProperty*>(property.GetPointer());
+
+          if (nullptr != stringProperty)
+          {
+            stringProperty->SetValue(name);
+            return;
+          }
+        }
+      }
+
+      this->SetStringProperty("name", name);
     }
     /**
      * \brief Extra convenience access method to set the name of an object.
      *
-     * The name will be stored in the non-renderer-specific PropertyList in a StringProperty named "name".
+     * \sa SetName(const char*)
      */
-    virtual void SetName(const std::string name) { this->SetName(name.c_str()); }
+    virtual void SetName(const std::string& name) { this->SetName(name.c_str()); }
     /**
      * \brief Convenience access method for visibility properties (instances
      * of BoolProperty with property-key "visible")
@@ -494,7 +515,7 @@ namespace mitk
      * of BoolProperty)
      * \param visible If set to true, the data will be rendered. If false, the render will skip this data.
      * \param renderer Specify a renderer if the visibility shall be specific to a renderer
-     * \param propertyKey Can be used to specify a user defined name of the visibility propery.
+     * \param propertyKey Can be used to specify a user defined name of the visibility property.
      */
     void SetVisibility(bool visible, const mitk::BaseRenderer *renderer = nullptr, const char *propertyKey = "visible");
 
@@ -546,7 +567,7 @@ namespace mitk
      * \brief Get the timestamp of the last change of the contents of this node or
      * the referenced BaseData.
      */
-    unsigned long GetMTime() const override;
+    itk::ModifiedTimeType GetMTime() const override;
 
     /**
      * \brief Get the timestamp of the last change of the reference to the

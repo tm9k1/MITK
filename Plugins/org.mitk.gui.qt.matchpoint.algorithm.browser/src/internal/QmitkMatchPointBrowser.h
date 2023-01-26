@@ -16,9 +16,6 @@ found in the LICENSE file.
 #include <QmitkAbstractView.h>
 
 #include <berryISelectionListener.h>
-#include <berryIPreferences.h>
-#include <berryIPreferencesService.h>
-#include <berryIBerryPreferences.h>
 
 //QT
 #include <QSortFilterProxyModel>
@@ -38,7 +35,6 @@ found in the LICENSE file.
 
 \warning  This class is not yet documented. Use "git blame" and ask the author to provide basic documentation.
 
-\sa QmitkFunctionality
 \ingroup ${plugin_target}_internal
 */
 class QmitkMatchPointBrowser : public QmitkAbstractView
@@ -63,7 +59,7 @@ public:
     * \brief Called by the framework to indicate that the preferences have changed.
     * \param prefs not used, as we call RetrievePreferenceValues().
     */
-    void OnPreferencesChanged(const berry::IBerryPreferences* prefs) override;
+    void OnPreferencesChanged(const mitk::IPreferences* prefs) override;
 
     protected slots:
 
@@ -108,7 +104,7 @@ private:
     /**
     * \brief Called to get hold of the actual preferences node.
     */
-    berry::IBerryPreferences::Pointer RetrievePreferences();
+    mitk::IPreferences* RetrievePreferences();
 
     QWidget* m_Parent;
 

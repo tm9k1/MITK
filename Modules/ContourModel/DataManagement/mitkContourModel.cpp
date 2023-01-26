@@ -12,6 +12,17 @@ found in the LICENSE file.
 #include <mitkContourModel.h>
 #include <mitkPlaneGeometry.h>
 
+namespace mitk
+{
+  itkEventMacroDefinition(ContourModelEvent, itk::AnyEvent);
+  itkEventMacroDefinition(ContourModelShiftEvent, ContourModelEvent);
+  itkEventMacroDefinition(ContourModelSizeChangeEvent, ContourModelEvent);
+  itkEventMacroDefinition(ContourModelAddEvent, ContourModelSizeChangeEvent);
+  itkEventMacroDefinition(ContourModelRemoveEvent, ContourModelSizeChangeEvent);
+  itkEventMacroDefinition(ContourModelExpandTimeBoundsEvent, ContourModelEvent);
+  itkEventMacroDefinition(ContourModelClosedEvent, ContourModelEvent);
+}
+
 mitk::ContourModel::ContourModel() : m_UpdateBoundingBox(true)
 {
   // set to initial state
@@ -117,7 +128,7 @@ void mitk::ContourModel::InsertVertexAtIndex(const Point3D &vertex, int index, b
 {
   if (!this->IsEmptyTimeStep(timestep))
   {
-    if (index >= 0 && this->m_ContourSeries[timestep]->GetSize() > ContourElement::VertexSizeType(index))
+    if (index >= 0 && this->m_ContourSeries[timestep]->GetSize() >= ContourElement::VertexSizeType(index))
     {
       this->m_ContourSeries[timestep]->InsertVertexAtIndex(vertex, isControlPoint, index);
       this->InvokeEvent(ContourModelSizeChangeEvent());
@@ -188,6 +199,40 @@ const mitk::ContourModel::VertexType *mitk::ContourModel::GetVertexAt(int index,
   return nullptr;
 }
 
+const mitk::ContourModel::VertexType *mitk::ContourModel::GetVertexAt(mitk::Point3D &point,
+                                                                      float eps,
+                                                                      TimeStepType timestep) const
+{
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    return this->m_ContourSeries[timestep]->GetVertexAt(point, eps);
+  }
+  return nullptr;
+}
+
+
+const mitk::ContourModel::VertexType *mitk::ContourModel::GetNextControlVertexAt(mitk::Point3D &point,
+                                                                          float eps,
+                                                                          TimeStepType timestep) const
+{
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    return this->m_ContourSeries[timestep]->GetNextControlVertexAt(point, eps);
+  }
+  return nullptr;
+}
+
+const mitk::ContourModel::VertexType *mitk::ContourModel::GetPreviousControlVertexAt(mitk::Point3D &point,
+                                                                          float eps,
+                                                                          TimeStepType timestep) const
+{
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    return this->m_ContourSeries[timestep]->GetPreviousControlVertexAt(point, eps);
+  }
+  return nullptr;
+}
+
 int mitk::ContourModel::GetIndex(const VertexType *vertex, TimeStepType timestep)
 {
   if (!this->IsEmptyTimeStep(timestep))
@@ -235,11 +280,38 @@ bool mitk::ContourModel::IsEmptyTimeStep(unsigned int t) const
   return (this->m_ContourSeries.size() <= t);
 }
 
-bool mitk::ContourModel::IsNearContour(Point3D &point, float eps, TimeStepType timestep)
+bool mitk::ContourModel::IsNearContour(Point3D &point, float eps, TimeStepType timestep) const
 {
   if (!this->IsEmptyTimeStep(timestep))
   {
     return this->m_ContourSeries[timestep]->IsNearContour(point, eps);
+  }
+  return false;
+}
+
+bool mitk::ContourModel::GetLineSegmentForPoint(const mitk::Point3D& point,
+  float eps, TimeStepType timestep,
+  ContourElement::VertexSizeType& segmentStartIndex,
+  ContourElement::VertexSizeType& segmentEndIndex,
+  mitk::Point3D& closestContourPoint,
+  bool findClosest) const
+{
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    return this->m_ContourSeries[timestep]->GetLineSegmentForPoint(point, eps, segmentStartIndex, segmentEndIndex, closestContourPoint, findClosest);
+  }
+  return false;
+}
+
+bool mitk::ContourModel::GetLineSegmentForPoint(Point3D &point,
+                                                float eps,
+                                                TimeStepType timestep,
+                                                mitk::ContourElement::VertexType *previousVertex,
+                                                mitk::ContourElement::VertexType *nextVertex)
+{
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    return this->m_ContourSeries[timestep]->GetLineSegmentForPoint(point, eps, previousVertex, nextVertex);
   }
   return false;
 }
@@ -301,6 +373,15 @@ bool mitk::ContourModel::IsClosed(int timestep) const
     return this->m_ContourSeries[timestep]->IsClosed();
   }
   return false;
+}
+
+bool mitk::ContourModel::SelectControlVertexAt(Point3D &point, float eps, TimeStepType timestep)
+{
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    this->m_SelectedVertex = this->m_ContourSeries[timestep]->GetControlVertexAt(point, eps);
+  }
+  return this->m_SelectedVertex != nullptr;
 }
 
 bool mitk::ContourModel::SelectVertexAt(Point3D &point, float eps, TimeStepType timestep)
@@ -496,6 +577,26 @@ void mitk::ContourModel::RedistributeControlVertices(int period, TimeStepType ti
     this->Modified();
     this->m_UpdateBoundingBox = true;
   }
+}
+
+mitk::ContourModel::VertexListType mitk::ContourModel::GetControlVertices(TimeStepType timestep)
+{
+  VertexListType controlVertices;
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    controlVertices = this->m_ContourSeries[timestep]->GetControlVertices();
+  }
+  return controlVertices;
+}
+
+mitk::ContourModel::VertexListType mitk::ContourModel::GetVertexList(TimeStepType timestep)
+{
+  VertexListType controlVertices;
+  if (!this->IsEmptyTimeStep(timestep))
+  {
+    controlVertices = *this->m_ContourSeries[timestep]->GetVertexList();
+  }
+  return controlVertices;
 }
 
 void mitk::ContourModel::ClearData()

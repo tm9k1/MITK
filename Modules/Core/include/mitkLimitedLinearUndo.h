@@ -141,16 +141,16 @@ namespace mitk
 
 #pragma GCC visibility push(default)
 
-  /// Some itk events to notify listening GUI elements, when the undo or redo stack is empty (diable undo button)
+  /// Some itk events to notify listening GUI elements, when the undo or redo stack is empty (disable undo button)
   /// or when there are items in the stack (enable button)
-  itkEventMacro(UndoStackEvent, itk::ModifiedEvent);
-  itkEventMacro(UndoEmptyEvent, UndoStackEvent);
-  itkEventMacro(RedoEmptyEvent, UndoStackEvent);
-  itkEventMacro(UndoNotEmptyEvent, UndoStackEvent);
-  itkEventMacro(RedoNotEmptyEvent, UndoStackEvent);
+  itkEventMacroDeclaration(UndoStackEvent, itk::ModifiedEvent);
+  itkEventMacroDeclaration(UndoEmptyEvent, UndoStackEvent);
+  itkEventMacroDeclaration(RedoEmptyEvent, UndoStackEvent);
+  itkEventMacroDeclaration(UndoNotEmptyEvent, UndoStackEvent);
+  itkEventMacroDeclaration(RedoNotEmptyEvent, UndoStackEvent);
   /// Additional unused events, if anybody wants to put an artificial limit to the possible number of items in the stack
-  itkEventMacro(UndoFullEvent, UndoStackEvent);
-  itkEventMacro(RedoFullEvent, UndoStackEvent);
+  itkEventMacroDeclaration(UndoFullEvent, UndoStackEvent);
+  itkEventMacroDeclaration(RedoFullEvent, UndoStackEvent);
 
 #pragma GCC visibility pop
 

@@ -14,6 +14,7 @@ found in the LICENSE file.
 
 #include <mitkCustomMimeType.h>
 #include <mitkIOUtil.h>
+#include <mitkUtf8Util.h>
 
 #include <mitkFileReaderWriterBase.h>
 #include <mitkVersion.h>
@@ -56,6 +57,8 @@ namespace mitk
 
     us::PrototypeServiceFactory *m_PrototypeFactory;
     us::ServiceRegistration<IFileReader> m_Reg;
+
+    const PropertyList* m_Properties;
   };
 
   AbstractFileReader::AbstractFileReader() : d(new Impl) {}
@@ -97,7 +100,7 @@ namespace mitk
       data->SetProperty(PropertyKeyPathToPropertyName(IOMetaInformationPropertyConstants::READER_MIME_CATEGORY()), StringProperty::New(d->GetMimeType()->GetCategory()));
       if (this->GetInputStream() == nullptr)
       {
-        data->SetProperty(PropertyKeyPathToPropertyName(IOMetaInformationPropertyConstants::READER_INPUTLOCATION()), StringProperty::New(IOUtil::Local8BitToUtf8(this->GetInputLocation())));
+        data->SetProperty(PropertyKeyPathToPropertyName(IOMetaInformationPropertyConstants::READER_INPUTLOCATION()), StringProperty::New(Utf8Util::Local8BitToUtf8(this->GetInputLocation())));
       }
 
       for (const auto& option : options)
@@ -134,7 +137,7 @@ namespace mitk
     }
     else
     {
-      if (itksys::SystemTools::FileExists(this->GetInputLocation().c_str(), true))
+      if (itksys::SystemTools::FileExists(Utf8Util::Local8BitToUtf8(this->GetInputLocation()).c_str(), true))
       {
         return Supported;
       }
@@ -227,7 +230,7 @@ namespace mitk
       if (d->m_TmpFile.empty())
       {
         // write the stream contents to temporary file
-        std::string ext = itksys::SystemTools::GetFilenameExtension(this->GetInputLocation());
+        std::string ext = Utf8Util::Utf8ToLocal8Bit(itksys::SystemTools::GetFilenameExtension(Utf8Util::Local8BitToUtf8(this->GetInputLocation())));
         std::ofstream tmpStream;
         localFileName = mitk::IOUtil::CreateTemporaryFile(
           tmpStream, std::ios_base::out | std::ios_base::trunc | std::ios_base::binary, "XXXXXX" + ext);
@@ -286,6 +289,16 @@ namespace mitk
     d->RemoveProgressCallback(callback);
   }
 
+  void AbstractFileReader::SetProperties(const PropertyList* properties)
+  {
+    d->m_Properties = properties;
+  }
+
+  const PropertyList* AbstractFileReader::GetProperties() const
+  {
+    return d->m_Properties;
+  }
+
   ////////////////// µS related Getters //////////////////
 
   const CustomMimeType *AbstractFileReader::GetMimeType() const { return d->GetMimeType(); }
@@ -297,13 +310,12 @@ namespace mitk
     // path
     if (!filePath.empty())
     {
-      auto path = itksys::SystemTools::GetFilenamePath(filePath);
-      path = IOUtil::Local8BitToUtf8(path);
+      auto path = itksys::SystemTools::GetFilenamePath(Utf8Util::Local8BitToUtf8(filePath));
       node->SetProperty(StringProperty::PATH, mitk::StringProperty::New(path));
     }
 
     // name already defined?
-    mitk::StringProperty::Pointer nameProp = dynamic_cast<mitk::StringProperty *>(node->GetProperty("name"));
+    mitk::StringProperty::Pointer nameProp = dynamic_cast<mitk::StringProperty *>(node->GetProperty("name", nullptr, false));
     if (nameProp.IsNull() || nameProp->GetValue() == DataNode::NO_NAME_VALUE())
     {
       // name already defined in BaseData
@@ -313,14 +325,8 @@ namespace mitk
       {
         // name neither defined in node, nor in BaseData -> name = filebasename;
         auto name = this->GetRegisteredMimeType().GetFilenameWithoutExtension(filePath);
-        name = IOUtil::Local8BitToUtf8(name);
+        name = Utf8Util::Local8BitToUtf8(name);
         nameProp = mitk::StringProperty::New(name);
-        node->SetProperty("name", nameProp);
-      }
-      else
-      {
-        // name defined in BaseData!
-        nameProp = mitk::StringProperty::New(baseDataNameProp->GetValue());
         node->SetProperty("name", nameProp);
       }
     }

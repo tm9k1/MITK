@@ -13,8 +13,8 @@ found in the LICENSE file.
 #ifndef mitkDICOMITKSeriesGDCMReader_h
 #define mitkDICOMITKSeriesGDCMReader_h
 
+#include <mutex>
 #include <stack>
-#include "itkMutexLock.h"
 #include "mitkDICOMFileReader.h"
 #include "mitkDICOMDatasetSorter.h"
 #include "mitkDICOMGDCMImageFrameInfo.h"
@@ -98,7 +98,7 @@ namespace mitk
   \section DICOMITKSeriesGDCMReader_GantryTilt Gantry tilt handling
 
   When CT gantry tilt is used, the gantry plane (= X-Ray source and detector ring) and the vertical plane do not align
-  anymore. This scanner feature is used for example to reduce metal artifacs (e.g. <i>Lee C , Evaluation of Using CT
+  anymore. This scanner feature is used for example to reduce metal artifacts (e.g. <i>Lee C , Evaluation of Using CT
   Gantry Tilt Scan on Head and Neck Cancer Patients with Dental Structure: Scans Show Less Metal Artifacts. Presented
   at: Radiological Society of North America 2011 Scientific Assembly and Annual Meeting; November 27- December 2,
   2011 Chicago IL.</i>).
@@ -361,7 +361,7 @@ class MITKDICOM_EXPORT DICOMITKSeriesGDCMReader : public DICOMFileReader
 
   private:
 
-    static itk::MutexLock::Pointer s_LocaleMutex;
+    static std::mutex s_LocaleMutex;
 
     mutable std::stack<std::string> m_ReplacedCLocales;
     mutable std::stack<std::locale> m_ReplacedCinLocales;

@@ -36,7 +36,6 @@ found in the LICENSE file.
 
 #include <vtkContourFilter.h>
 
-#include <mitkIRenderingManager.h>
 #include <mitkIRenderWindowPart.h>
 
 /*forward declarations*/
@@ -56,8 +55,6 @@ class ctkEvent;
 */
 class RTDoseVisualizer : public QmitkAbstractView
 {
-  // this is needed for all Qt objects that should have a Qt meta-object
-  // (everything that derives from QObject and wants to have signal/slots)
   Q_OBJECT
 
 public:
@@ -105,7 +102,6 @@ protected:
 
   void SetFocus() override;
 
-  /// \brief called by QmitkFunctionality when DataManager's selection has changed
   void OnSelectionChanged( berry::IWorkbenchPart::Pointer source,
     const QList<mitk::DataNode::Pointer>& nodes ) override;
 

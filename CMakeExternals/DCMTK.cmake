@@ -30,8 +30,8 @@ if(MITK_USE_DCMTK)
 
     ExternalProject_Add(${proj}
       LIST_SEPARATOR ${sep}
-      URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/dcmtk-3.6.6.tar.gz
-      URL_MD5 f815879d315b916366a9da71339c7575
+      GIT_REPOSITORY https://github.com/DCMTK/dcmtk.git
+      GIT_TAG DCMTK-3.6.7
       CMAKE_GENERATOR ${gen}
       CMAKE_GENERATOR_PLATFORM ${gen_platform}
       CMAKE_ARGS
@@ -39,7 +39,7 @@ if(MITK_USE_DCMTK)
          ${additional_args}
          "-DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS} ${DCMTK_CXX_FLAGS}"
          "-DCMAKE_C_FLAGS:STRING=${CMAKE_C_FLAGS} ${DCMTK_C_FLAGS}"
-         -DDCMTK_ENABLE_BUILTIN_DICTIONARY:BOOL=ON
+         -DDCMTK_DEFAULT_DICT:STRING=builtin
          -DDCMTK_ENABLE_CXX11:BOOL=ON
          -DDCMTK_ENABLE_STL:BOOL=ON
          -DDCMTK_WITH_DOXYGEN:BOOL=OFF
@@ -50,6 +50,7 @@ if(MITK_USE_DCMTK)
          -DDCMTK_WITH_XML:BOOL=OFF  # see bug #9894
          -DDCMTK_WITH_ICONV:BOOL=OFF  # see bug #9894
          -DDCMTK_WITH_ICU:BOOL=OFF  # see T26438
+         -DDCMTK_WITH_WRAP:BOOL=OFF # see T27578
          ${${proj}_CUSTOM_CMAKE_ARGS}
       CMAKE_CACHE_ARGS
         ${ep_common_cache_args}

@@ -15,10 +15,8 @@ found in the LICENSE file.
 #define QMITKAPPINSTANCESPREFERENCEPAGE_H_
 
 #include <berryIQtPreferencePage.h>
-#include <berryIPreferences.h>
 
 #include <ui_QmitkAppInstancesPreferencePage.h>
-
 
 class QmitkAppInstancesPreferencePage : public QObject, public berry::IQtPreferencePage
 {
@@ -43,9 +41,6 @@ public:
 private:
 
   Ui::QmitkAppInstancesPreferencePage controls;
-
-  berry::IPreferences::Pointer prefs;
-
   QWidget* mainWidget;
 };
 

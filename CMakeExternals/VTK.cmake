@@ -11,10 +11,6 @@ set(proj VTK)
 set(proj_DEPENDENCIES )
 set(VTK_DEPENDS ${proj})
 
-if(MITK_USE_HDF5)
-  list(APPEND proj_DEPENDENCIES HDF5)
-endif()
-
 if(NOT DEFINED VTK_DIR)
 
   set(additional_cmake_args )
@@ -54,19 +50,20 @@ if(NOT DEFINED VTK_DIR)
 
   ExternalProject_Add(${proj}
     LIST_SEPARATOR ${sep}
-    URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/VTK-9.0.1.tar.gz
-    URL_MD5 f443c9198495081765910ebbc9dace3a
-    PATCH_COMMAND
-      ${PATCH_COMMAND} -N -p1 -i ${CMAKE_CURRENT_LIST_DIR}/VTK-9.0.1.patch
+    GIT_REPOSITORY https://github.com/Kitware/VTK.git
+    GIT_TAG v9.1.0
+    GIT_SUBMODULES ""
     CMAKE_GENERATOR ${gen}
     CMAKE_GENERATOR_PLATFORM ${gen_platform}
     CMAKE_ARGS
       ${ep_common_args}
+      -DOpenGL_GL_PREFERENCE:STRING=LEGACY
       -DVTK_ENABLE_WRAPPING:BOOL=OFF
       -DVTK_LEGACY_REMOVE:BOOL=ON
       -DVTK_MODULE_ENABLE_VTK_TestingRendering:STRING=YES
       -DVTK_MODULE_ENABLE_VTK_RenderingContextOpenGL2:STRING=YES
       -DVTK_MODULE_ENABLE_VTK_RenderingVolumeOpenGL2:STRING=YES
+      -DVTK_MODULE_ENABLE_VTK_GUISupportQtQuick:STRING=NO
       ${additional_cmake_args}
       ${${proj}_CUSTOM_CMAKE_ARGS}
     CMAKE_CACHE_ARGS

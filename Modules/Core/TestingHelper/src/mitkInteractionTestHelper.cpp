@@ -55,21 +55,21 @@ void mitk::InteractionTestHelper::Initialize(const std::string &interactionXmlFi
         element->Attribute(mitk::InteractionEventConst::xmlEventPropertyRendererName().c_str());
 
       // get view direction
-      mitk::SliceNavigationController::ViewDirection viewDirection = mitk::SliceNavigationController::Axial;
+      mitk::AnatomicalPlane viewDirection = mitk::AnatomicalPlane::Axial;
       if (element->Attribute(mitk::InteractionEventConst::xmlEventPropertyViewDirection().c_str()) != nullptr)
       {
         int viewDirectionNum =
           std::atoi(element->Attribute(mitk::InteractionEventConst::xmlEventPropertyViewDirection().c_str()));
-        viewDirection = static_cast<mitk::SliceNavigationController::ViewDirection>(viewDirectionNum);
+        viewDirection = static_cast<mitk::AnatomicalPlane>(viewDirectionNum);
       }
 
       // get mapper slot id
-      mitk::BaseRenderer::MapperSlotId mapperID = mitk::BaseRenderer::Standard2D;
+      MapperSlotId mapperID = mitk::BaseRenderer::Standard2D;
       if (element->Attribute(mitk::InteractionEventConst::xmlEventPropertyMapperID().c_str()) != nullptr)
       {
         int mapperIDNum =
           std::atoi(element->Attribute(mitk::InteractionEventConst::xmlEventPropertyMapperID().c_str()));
-        mapperID = static_cast<mitk::BaseRenderer::MapperSlotId>(mapperIDNum);
+        mapperID = static_cast<MapperSlotId>(mapperIDNum);
       }
 
       // Get Size of Render Windows
@@ -151,10 +151,10 @@ void mitk::InteractionTestHelper::Initialize(const std::string &interactionXmlFi
       rw->GetVtkRenderWindow()->WaitForCompletion();
 
       // connect SliceNavigationControllers to timestep changed event of TimeNavigationController
-      rw->GetSliceNavigationController()->ConnectGeometryTimeEvent(rm->GetTimeNavigationController(), false);
-      rm->GetTimeNavigationController()->ConnectGeometryTimeEvent(rw->GetSliceNavigationController(), false);
+      rw->GetSliceNavigationController()->ConnectGeometryTimeEvent(rm->GetTimeNavigationController());
+      rm->GetTimeNavigationController()->ConnectGeometryTimeEvent(rw->GetSliceNavigationController());
 
-      // add to list of kown render windows
+      // add to list of known render windows
       m_RenderWindowList.push_back(rw);
     }
 
@@ -162,9 +162,8 @@ void mitk::InteractionTestHelper::Initialize(const std::string &interactionXmlFi
     //    mitkWidget1->GetSliceNavigationController()
     //      ->ConnectGeometrySendEvent(mitk::BaseRenderer::GetInstance(mitkWidget4->GetRenderWindow()));
 
-    //########### register display interactor to handle scroll events ##################
-    // use MouseModeSwitcher to ensure that the statemachine of DisplayInteractor is loaded correctly
-    m_MouseModeSwitcher = mitk::MouseModeSwitcher::New();
+    // register interaction event obserer to handle scroll events
+    InitializeDisplayActionEventHandling();
   }
   else
   {
@@ -173,6 +172,14 @@ void mitk::InteractionTestHelper::Initialize(const std::string &interactionXmlFi
 
   // WARNING assumes a 3D window exists !!!!
   this->AddDisplayPlaneSubTree();
+}
+
+void mitk::InteractionTestHelper::InitializeDisplayActionEventHandling()
+{
+  m_DisplayActionEventBroadcast = mitk::DisplayActionEventBroadcast::New();
+  m_DisplayActionEventBroadcast->LoadStateMachine("DisplayInteraction.xml");
+  m_DisplayActionEventBroadcast->SetEventConfig("DisplayConfigMITKBase.xml");
+  m_DisplayActionEventBroadcast->AddEventConfig("DisplayConfigCrosshair.xml");
 }
 
 mitk::InteractionTestHelper::~InteractionTestHelper()
@@ -282,8 +289,7 @@ mitk::RenderWindow *mitk::InteractionTestHelper::GetRenderWindowByName(const std
   return nullptr;
 }
 
-mitk::RenderWindow *mitk::InteractionTestHelper::GetRenderWindowByDefaultViewDirection(
-  mitk::SliceNavigationController::ViewDirection viewDirection)
+mitk::RenderWindow *mitk::InteractionTestHelper::GetRenderWindowByDefaultViewDirection(AnatomicalPlane viewDirection)
 {
   auto it = m_RenderWindowList.begin();
   auto end = m_RenderWindowList.end();
@@ -361,12 +367,12 @@ void mitk::InteractionTestHelper::Set3dCameraSettings()
         element->Attribute(mitk::InteractionEventConst::xmlEventPropertyRendererName().c_str());
 
       // get mapper slot id
-      mitk::BaseRenderer::MapperSlotId mapperID = mitk::BaseRenderer::Standard2D;
+      MapperSlotId mapperID = mitk::BaseRenderer::Standard2D;
       if (element->Attribute(mitk::InteractionEventConst::xmlEventPropertyMapperID().c_str()) != nullptr)
       {
         int mapperIDNum =
           std::atoi(element->Attribute(mitk::InteractionEventConst::xmlEventPropertyMapperID().c_str()));
-        mapperID = static_cast<mitk::BaseRenderer::MapperSlotId>(mapperIDNum);
+        mapperID = static_cast<MapperSlotId>(mapperIDNum);
       }
 
       if (mapperID == mitk::BaseRenderer::Standard3D)

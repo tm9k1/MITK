@@ -345,8 +345,7 @@ bool QmitkDataStorageTreeModel::dropMimeData(
 
         if (basedata.IsNotNull())
         {
-          mitk::RenderingManager::GetInstance()->InitializeViews(
-            basedata->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true);
+          mitk::RenderingManager::GetInstance()->InitializeViews(basedata->GetTimeGeometry());
 
           numberOfNodesDropped++;
         }
@@ -571,7 +570,9 @@ void QmitkDataStorageTreeModel::SetDataStorageDeleted()
 
 void QmitkDataStorageTreeModel::AddNodeInternal(const mitk::DataNode *node)
 {
-  if (node == nullptr || m_DataStorage.IsExpired() || !m_DataStorage.Lock()->Exists(node) || m_Root->Find(node) != nullptr)
+  auto dataStorage = m_DataStorage.Lock();
+
+  if (node == nullptr || dataStorage.IsNull() || !dataStorage->Exists(node) || m_Root->Find(node) != nullptr)
     return;
 
   // find out if we have a root node
@@ -634,7 +635,9 @@ void QmitkDataStorageTreeModel::AddNodeInternal(const mitk::DataNode *node)
 
 void QmitkDataStorageTreeModel::AddNode(const mitk::DataNode *node)
 {
-  if (node == nullptr || m_BlockDataStorageEvents || m_DataStorage.IsExpired() || !m_DataStorage.Lock()->Exists(node) ||
+  auto dataStorage = m_DataStorage.Lock();
+
+  if (node == nullptr || m_BlockDataStorageEvents || dataStorage.IsNull() || !dataStorage->Exists(node) ||
       m_Root->Find(node) != nullptr)
     return;
 
@@ -728,7 +731,7 @@ bool QmitkDataStorageTreeModel::setData(const QModelIndex &index, const QVariant
 
   if (role == Qt::EditRole && !value.toString().isEmpty())
   {
-    dataNode->SetStringProperty("name", value.toString().toStdString().c_str());
+    dataNode->SetName(value.toString().toStdString());
 
     mitk::PlanarFigure *planarFigure = dynamic_cast<mitk::PlanarFigure *>(dataNode->GetData());
 

@@ -6,7 +6,7 @@
 *  you may not use this file except in compliance with the License.
 *  You may obtain a copy of the License at
 *
-*         http://www.apache.org/licenses/LICENSE-2.0.txt
+*         https://www.apache.org/licenses/LICENSE-2.0.txt
 *
 *  Unless required by applicable law or agreed to in writing, software
 *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +29,8 @@ namespace itk
   MaskedStatisticsImageFilter< TInputImage, TMaskImage >
     ::MaskedStatisticsImageFilter():m_ThreadSum(1), m_SumOfSquares(1), m_Count(1), m_ThreadMin(1), m_ThreadMax(1)
   {
+    this->DynamicMultiThreadingOff();
+
     // first output is a copy of the image, DataObject created by
     // superclass
     //
@@ -224,7 +226,7 @@ namespace itk
     MaskedStatisticsImageFilter< TInputImage, TMaskImage >
     ::BeforeThreadedGenerateData()
   {
-    ThreadIdType numberOfThreads = this->GetNumberOfThreads();
+    ThreadIdType numberOfThreads = this->GetNumberOfWorkUnits();
 
     // Resize the thread temporaries
     m_Count.SetSize(numberOfThreads);
@@ -250,7 +252,7 @@ namespace itk
     SizeValueType   count;
     RealType        sumOfSquares;
 
-    ThreadIdType numberOfThreads = this->GetNumberOfThreads();
+    ThreadIdType numberOfThreads = this->GetNumberOfWorkUnits();
 
     PixelType minimum;
     PixelType maximum;

@@ -34,7 +34,7 @@ private:
 
 public:
   /**
-   * @brief Setup Always call this method before each Test-case to ensure correct and new intialization of the used
+   * @brief Setup Always call this method before each Test-case to ensure correct and new initialization of the used
    * members for a new test case. (If the members are not used in a test, the method does not need to be called).
    */
   void setUp() override { m_Surface = mitk::IOUtil::Load<mitk::Surface>(GetTestDataFilePath("ball.stl")); }
@@ -54,14 +54,14 @@ public:
 
     CPPUNIT_ASSERT_MESSAGE(
       "SurfaceToImageFilter_AnyInputImageAndModeSetToBinary_ResultIsImageWithUCHARPixelType",
-      surfaceToImageFilter->GetOutput()->GetPixelType().GetComponentType() == itk::ImageIOBase::UCHAR);
+      surfaceToImageFilter->GetOutput()->GetPixelType().GetComponentType() == itk::IOComponentEnum::UCHAR);
 
     surfaceToImageFilter->SetUShortBinaryPixelType(true);
     surfaceToImageFilter->Update();
 
     CPPUNIT_ASSERT_MESSAGE(
       "SurfaceToImageFilter_AnyInputImageAndModeSetToBinary_ResultIsImageWithUCHARPixelType",
-      surfaceToImageFilter->GetOutput()->GetPixelType().GetComponentType() == itk::ImageIOBase::USHORT);
+      surfaceToImageFilter->GetOutput()->GetPixelType().GetComponentType() == itk::IOComponentEnum::USHORT);
   }
 
   void test3DSurfaceCorrect()
@@ -196,7 +196,7 @@ public:
     idx[1] = 9, idx[2] = 23;
     idx[3] = 0;
     valuesCorrect = valuesCorrect && (outputReader.GetPixelByIndex(idx) == 0);
-    // Values inside the ball should be 1   hould be 1
+    // Values inside the ball should be 1
     idx[0] = 15;
     idx[1] = 15, idx[2] = 15;
     idx[3] = 0;
@@ -221,7 +221,7 @@ public:
     idx[1] = 9, idx[2] = 23;
     idx[3] = 0;
     valuesCorrect = valuesCorrect && (outputReader.GetPixelByIndex(idx) == 1);
-    // Values inside the ball but in the second timestep hould be 0
+    // Values inside the ball but in the second timestep should be 0
     idx[0] = 15;
     idx[1] = 15, idx[2] = 15;
     idx[3] = 1;

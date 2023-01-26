@@ -41,8 +41,9 @@ if(NOT DEFINED GDCM_DIR)
 
   ExternalProject_Add(${proj}
      LIST_SEPARATOR ${sep}
-     URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/gdcm-3.0.8.tar.gz
-     URL_MD5 29e0e60b04183e3eb9c18ad093156b2c
+     GIT_REPOSITORY https://github.com/malaterre/GDCM.git
+     GIT_TAG v3.0.14
+     GIT_SUBMODULES ""
      CMAKE_GENERATOR ${gen}
      CMAKE_GENERATOR_PLATFORM ${gen_platform}
      CMAKE_ARGS

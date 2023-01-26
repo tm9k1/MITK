@@ -20,11 +20,13 @@ found in the LICENSE file.
 #include <mitkWeakPointer.h>
 
 #include <QmitkAbstractView.h>
+#include <QmitkSliceNavigationListener.h>
+#include <mitkIRenderWindowPartListener.h>
 
 /**
  * @brief
  */
-class QmitkVolumeVisualizationView : public QmitkAbstractView
+class QmitkVolumeVisualizationView : public QmitkAbstractView, public mitk::IRenderWindowPartListener
 {
   Q_OBJECT
 
@@ -44,8 +46,12 @@ private Q_SLOTS:
 
   void OnMitkInternalPreset(int mode);
   void OnEnableRendering(bool state);
-  void OnRenderMode(int mode);
-  void OnBlendMode(int mode);
+  void OnBlendMode(int index);
+  void OnSelectedTimePointChanged(const mitk::TimePointType &);
+
+protected:
+  void RenderWindowPartActivated(mitk::IRenderWindowPart *renderWindowPart) override;
+  void RenderWindowPartDeactivated(mitk::IRenderWindowPart *renderWindowPart) override;
 
 private:
 
@@ -55,6 +61,7 @@ private:
 
   Ui::QmitkVolumeVisualizationViewControls* m_Controls;
   mitk::WeakPointer<mitk::DataNode> m_SelectedNode;
+  QmitkSliceNavigationListener m_TimePointChangeListener;
 
 };
 

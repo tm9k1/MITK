@@ -117,6 +117,11 @@ void QmitkDataNodeContextMenu::InitDefaultActions()
   m_UnknownDataNodeDescriptor->AddAction(m_ReinitAction, true);
   m_DescriptorActionList.push_back(std::make_pair(m_UnknownDataNodeDescriptor, m_ReinitAction));
 
+  m_ResetGeometryAction = new QmitkDataNodeResetGeometryAction(m_Parent, workbenchPartSite);
+  m_ResetGeometryAction->setIcon(QIcon(":/org.mitk.gui.qt.datamanager/Refresh_48.png"));
+  m_UnknownDataNodeDescriptor->AddAction(m_ResetGeometryAction, true);
+  m_DescriptorActionList.push_back(std::make_pair(m_UnknownDataNodeDescriptor, m_ResetGeometryAction));
+
   QAction* saveAction = new QmitkFileSaveAction(QIcon(":/org.mitk.gui.qt.datamanager/Save_48.png"), workbenchPartSite->GetWorkbenchWindow());
   m_UnknownDataNodeDescriptor->AddAction(saveAction, true);
   m_DescriptorActionList.push_back(std::make_pair(m_UnknownDataNodeDescriptor, saveAction));
@@ -253,10 +258,12 @@ void QmitkDataNodeContextMenu::InitServiceActions()
 
 void QmitkDataNodeContextMenu::OnContextMenuRequested(const QPoint& /*pos*/)
 {
-  if (m_WorkbenchPartSite.Expired())
+  auto workbenchPartSite = m_WorkbenchPartSite.Lock();
+
+  if (workbenchPartSite.IsNull())
     return;
 
-  auto selection = m_WorkbenchPartSite.Lock()->GetWorkbenchWindow()->GetSelectionService()->GetSelection()
+  auto selection = workbenchPartSite->GetWorkbenchWindow()->GetSelectionService()->GetSelection()
     .Cast<const mitk::DataNodeSelection>();
 
   if (selection.IsNull() || selection->IsEmpty())
@@ -297,9 +304,10 @@ void QmitkDataNodeContextMenu::OnExtensionPointActionTriggered(QAction* action)
 
   auto configElement = configElementIter->second;
   auto contextMenuAction = configElement->CreateExecutableExtension<mitk::IContextMenuAction>("class");
+  auto dataStorage = m_DataStorage.Lock();
 
-  if (!m_DataStorage.IsExpired())
-    contextMenuAction->SetDataStorage(m_DataStorage.Lock());
+  if (dataStorage.IsNotNull())
+    contextMenuAction->SetDataStorage(dataStorage);
 
   if ("QmitkCreatePolygonModelAction" == configElement->GetAttribute("class"))
   {

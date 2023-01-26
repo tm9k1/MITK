@@ -1,3 +1,7 @@
+#[[ When increasing the minimum required version, check if Boost_ADDITIONAL_VERSIONS
+    in CMake/PackageDepends/MITK_Boost_Config.cmake can be removed. See the first
+    long comment in CMakeExternals/Boost.cmake for details. ]]
+
 set(MITK_CMAKE_MINIMUM_REQUIRED_VERSION 3.18)
 cmake_minimum_required(VERSION ${MITK_CMAKE_MINIMUM_REQUIRED_VERSION})
 
@@ -33,7 +37,7 @@ if(MITK_USE_SUPERBUILD)
   set(MITK_SOURCE_DIR ${PROJECT_SOURCE_DIR})
   set(MITK_BINARY_DIR ${PROJECT_BINARY_DIR})
 else()
-  project(MITK VERSION 2021.02.99)
+  project(MITK VERSION 2022.10.99)
   include_directories(SYSTEM ${MITK_SUPERBUILD_BINARY_DIR})
 endif()
 
@@ -102,75 +106,24 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
                STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-#-----------------------------------------------------------------------------
-# Check miminum macOS version
-#-----------------------------------------------------------------------------
-# The minimum supported macOS version is 10.14. If you use a version less than
-# 10.14, there is no guarantee that the build still works.
-if(APPLE)
-  exec_program(sw_vers ARGS -productVersion OUTPUT_VARIABLE macos_version)
-  if (macos_version VERSION_LESS "10.14")
-    message(WARNING "Detected macOS version \"${macos_version}\" is not supported anymore. Minimum required macOS version is at least 10.14.")
-  endif()
-  if (CMAKE_OSX_DEPLOYMENT_TARGET AND CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS 10.14)
-    message(WARNING "Detected macOS deployment target \"${CMAKE_OSX_DEPLOYMENT_TARGET}\" is not supported anymore. Minimum required macOS version is at least 10.14.")
-  endif()
-endif()
-
-#-----------------------------------------------------------------------------
-# Check miminum compiler versions
-#-----------------------------------------------------------------------------
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # require at least gcc 4.9 as provided by ppa:ubuntu-toolchain-r/test for Ubuntu 14.04
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-    message(FATAL_ERROR "GCC version must be at least 4.9
-If you are using Ubuntu 14.04, you can easily install gcc and g++ 4.9 (or any later version available) in addition to your version ${CMAKE_CXX_COMPILER_VERSION}:
-  sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-  sudo apt-get update
-  sudo apt-get install gcc-4.9 g++-4.9
-Make sure to explicitly specify these compilers when configuring MITK:
-  CMAKE_C_COMPILER:FILEPATH=/usr/bin/gcc-4.9
-  CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/g++-4.9
-For more information on the proposed PPA see the Toolchain Updates section of https://wiki.ubuntu.com/ToolChain.")
-  endif()
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  # require at least clang 3.4
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)
-    message(FATAL_ERROR "Clang version must be at least 3.4")
-  endif()
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-  # require at least clang 5.0
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-    message(FATAL_ERROR "Apple Clang version must be at least 5.0")
-  endif()
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  # require at least Visual Studio 2017
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.10)
-    message(FATAL_ERROR "Microsoft Visual Studio 2017 or newer required")
-  endif()
-else()
-  message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang (Linux or Apple), GCC and MSVC.")
-endif()
-
 if(CMAKE_COMPILER_IS_GNUCXX)
   mitkFunctionGetGccVersion(${CMAKE_CXX_COMPILER} GCC_VERSION)
 else()
   set(GCC_VERSION 0)
 endif()
 
-set(MITK_CXX_STANDARD 14)
+set(MITK_CXX_STANDARD 17)
 
 set(CMAKE_CXX_EXTENSIONS 0)
 set(CMAKE_CXX_STANDARD ${MITK_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD_REQUIRED 1)
 
 # This is necessary to avoid problems with compile feature checks.
-# CMAKE_CXX_STANDARD seems to only set the -std=c++14 flag for targets.
-# However, compile flag checks also need to be done with -std=c++14.
-# The MITK_CXX14_FLAG variable is also used for external projects
+# CMAKE_CXX_STANDARD seems to only set the -std=c++<std> flag for targets.
+# However, compile flag checks also need to be done with -std=c++<std>.
+# The MITK_CXX<std>_FLAG variable is also used for external projects
 # build during the MITK super-build.
-mitkFunctionCheckCompilerFlags("-std=c++14" MITK_CXX14_FLAG)
+mitkFunctionCheckCompilerFlags("-std=c++${MITK_CXX_STANDARD}" MITK_CXX${MITK_CXX_STANDARD}_FLAG)
 
 #-----------------------------------------------------------------------------
 # Warn if source or build path is too long
@@ -212,13 +165,11 @@ option(MITK_XVFB_TESTING "Execute test drivers through xvfb-run" OFF)
 
 option(MITK_BUILD_ALL_APPS "Build all MITK applications" OFF)
 option(MITK_BUILD_EXAMPLES "Build the MITK Examples" OFF)
-option(MITK_ENABLE_PIC_READER "Enable support for reading the DKFZ pic file format." ON)
 
 mark_as_advanced(
   MITK_XVFB_TESTING
   MITK_FAST_TESTING
   MITK_BUILD_ALL_APPS
-  MITK_ENABLE_PIC_READER
 )
 
 #-----------------------------------------------------------------------------
@@ -321,8 +272,10 @@ if(MITK_USE_Qt5)
       endif()
 
       if(_compilers MATCHES "[0-9]+")
-        if (CMAKE_MATCH_0 EQUAL 2019)
-          list(APPEND _compilers "msvc2017") # Binary compatible to 2019
+        if (CMAKE_MATCH_0 EQUAL 2022)
+          list(APPEND _compilers "msvc2019" "msvc2017") # Binary compatible
+        elseif (CMAKE_MATCH_0 EQUAL 2019)
+          list(APPEND _compilers "msvc2017") # Binary compatible
         endif()
       endif()
     else()
@@ -541,6 +494,7 @@ include(WriteBasicConfigVersionFile)
 include(CheckCXXSourceCompiles)
 include(GenerateExportHeader)
 
+include(mitkFunctionAddManifest)
 include(mitkFunctionAddCustomModuleTest)
 include(mitkFunctionCheckModuleDependencies)
 include(mitkFunctionCompileSnippets)
@@ -579,30 +533,6 @@ include(mitkMacroCreateCTKPlugin)
 #-----------------------------------------------------------------------------
 # Global CMake variables
 #-----------------------------------------------------------------------------
-
-# Required and enabled C++14 features for all MITK code.
-# These are added as PUBLIC compile features to all MITK modules.
-set(MITK_CXX_FEATURES
-  cxx_auto_type
-  cxx_decltype
-  cxx_enum_forward_declarations
-  cxx_extended_friend_declarations
-  cxx_extern_templates
-  cxx_final
-  cxx_lambdas
-  cxx_local_type_template_args
-  cxx_long_long_type
-  cxx_nullptr
-  cxx_override
-  cxx_range_for
-  cxx_right_angle_brackets
-  cxx_rvalue_references
-  cxx_static_assert
-  cxx_strong_enums
-  cxx_template_template_parameters
-  cxx_trailing_return_types
-  cxx_variadic_macros
-)
 
 if(NOT DEFINED CMAKE_DEBUG_POSTFIX)
   # We can't do this yet because the CTK Plugin Framework
@@ -668,6 +598,12 @@ mark_as_advanced(BLUEBERRY_DEBUG_SMARTPOINTER)
 # Ask the user to show the console window for applications
 option(MITK_SHOW_CONSOLE_WINDOW "Use this to enable or disable the console window when starting MITK GUI Applications" ON)
 mark_as_advanced(MITK_SHOW_CONSOLE_WINDOW)
+
+# As of Windows 10 Version 1903 (May 2019 Update), applications can use the UTF-8 code page
+if(WIN32)
+  option(MITK_UTF8 "Use UTF-8 code page in MITK applications on Windows" ON)
+  mark_as_advanced(MITK_UTF8)
+endif()
 
 if(NOT MITK_FAST_TESTING)
   if(MITK_CTEST_SCRIPT_MODE STREQUAL "Continuous" OR MITK_CTEST_SCRIPT_MODE STREQUAL "Experimental")
@@ -756,7 +692,7 @@ endif()
 set(MITK_C_FLAGS "${COVERAGE_C_FLAGS}")
 set(MITK_C_FLAGS_DEBUG )
 set(MITK_C_FLAGS_RELEASE )
-set(MITK_CXX_FLAGS "${COVERAGE_CXX_FLAGS} ${MITK_CXX14_FLAG}")
+set(MITK_CXX_FLAGS "${COVERAGE_CXX_FLAGS} ${MITK_CXX${MITK_CXX_STANDARD}_FLAG}")
 set(MITK_CXX_FLAGS_DEBUG )
 set(MITK_CXX_FLAGS_RELEASE )
 
@@ -764,7 +700,7 @@ set(MITK_EXE_LINKER_FLAGS )
 set(MITK_SHARED_LINKER_FLAGS )
 
 if(WIN32)
-  set(MITK_CXX_FLAGS "${MITK_CXX_FLAGS} -DPOCO_NO_UNWINDOWS -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
+  set(MITK_CXX_FLAGS "${MITK_CXX_FLAGS} -DWIN32_LEAN_AND_MEAN -DNOMINMAX")
   mitkFunctionCheckCompilerFlags("/wd4005" MITK_CXX_FLAGS) # warning C4005: macro redefinition
   mitkFunctionCheckCompilerFlags("/wd4231" MITK_CXX_FLAGS) # warning C4231: nonstandard extension used : 'extern' before template explicit instantiation
   # the following line should be removed after fixing bug 17637
@@ -793,9 +729,11 @@ if(NOT MSVC_VERSION)
     -Wstrict-null-sentinel
     #-Wold-style-cast
     #-Wsign-promo
-    -Wno-error=deprecated-copy
+    -Wno-deprecated-copy
     -Wno-array-bounds
-
+    -Wno-cast-function-type
+    -Wno-maybe-uninitialized
+    -Wno-error=stringop-overread
     -fdiagnostics-show-option
     )
     mitkFunctionCheckCAndCXXCompilerFlags(${_flag} MITK_C_FLAGS MITK_CXX_FLAGS)
@@ -1021,14 +959,6 @@ endif()
 #-----------------------------------------------------------------------------
 
 if(BUILD_TESTING)
-  #[[ See T27701
-  # Initial cache for ProjectTemplate and PluginGenerator tests
-  configure_file(
-     CMake/mitkTestInitialCache.txt.in
-     ${MITK_BINARY_DIR}/mitkTestInitialCache.txt
-     @ONLY
-  )]]
-
   # Configuration for the CMake-generated test driver
   set(CMAKE_TESTDRIVER_EXTRA_INCLUDES "#include <stdexcept>")
   set(CMAKE_TESTDRIVER_BEFORE_TESTMAIN "
@@ -1201,6 +1131,14 @@ endif()
 #-----------------------------------------------------------------------------
 # Documentation
 #-----------------------------------------------------------------------------
+
+set(MITK_DOXYGEN_ADDITIONAL_INPUT_DIRS)
+set(MITK_DOXYGEN_ADDITIONAL_IMAGE_PATHS)
+
+foreach(MITK_EXTENSION_DIR ${MITK_DIR_PLUS_EXTENSION_DIRS})
+  set(MITK_DOXYGEN_ADDITIONAL_INPUT_DIRS "${MITK_DOXYGEN_ADDITIONAL_INPUT_DIRS} \"${MITK_EXTENSION_DIR}\"")
+  set(MITK_DOXYGEN_ADDITIONAL_IMAGE_PATHS "${MITK_DOXYGEN_ADDITIONAL_IMAGE_PATHS} \"${MITK_EXTENSION_DIR}\"")
+endforeach()
 
 if(DOXYGEN_FOUND)
   add_subdirectory(Documentation)

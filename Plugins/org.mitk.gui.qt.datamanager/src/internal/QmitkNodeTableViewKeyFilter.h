@@ -19,11 +19,6 @@ found in the LICENSE file.
 
 #include <QObject>
 
-namespace berry
-{
-  struct IPreferencesService;
-}
-
 /**
 * @brief A small class which receives key-pressed events on the node table.
 */
@@ -38,10 +33,6 @@ public:
 protected:
 
   bool eventFilter(QObject *obj, QEvent *event) override;
-  /**
-   * @brief The Preferences Service to retrieve and store preferences.
-   */
-  berry::IPreferencesService *m_PreferencesService;
 
   mitk::WeakPointer<mitk::DataStorage> m_DataStorage;
 };

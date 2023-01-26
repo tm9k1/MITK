@@ -13,7 +13,7 @@ found in the LICENSE file.
 #ifndef mitkFillRegionTool_h_Included
 #define mitkFillRegionTool_h_Included
 
-#include "mitkSetRegionTool.h"
+#include "mitkFillRegionBaseTool.h"
 #include <MitkSegmentationExports.h>
 
 namespace us
@@ -24,35 +24,37 @@ namespace us
 namespace mitk
 {
   /**
-    \brief Fill the inside of a contour with 1
+    \brief Fill the inside of a contour with the foreground pixel value.
 
     \sa SetRegionTool
 
-    \ingroup Interaction
-    \ingroup ToolManagerEtAl
+    \ingroup Interactions
 
     Finds the outer contour of a shape in 2D (possibly including holes) and sets all
-    the inside pixels to 1, filling holes in a segmentation.
-    \warning Only to be instantiated by mitk::ToolManager.
+    the pixels inside to the foreground pixel value (filling holes in a segmentation).
+    If clicked on the background, the outer contour might contain the whole image and thus
+    fill the whole image with the foreground pixel value.
 
-    $Author$
+    \warning Only to be instantiated by mitk::ToolManager.
   */
-  class MITKSEGMENTATION_EXPORT FillRegionTool : public SetRegionTool
+  class MITKSEGMENTATION_EXPORT FillRegionTool : public FillRegionBaseTool
   {
   public:
-    mitkClassMacro(FillRegionTool, SetRegionTool);
+    mitkClassMacro(FillRegionTool, FillRegionBaseTool);
     itkFactorylessNewMacro(Self);
     itkCloneMacro(Self);
 
-      const char **GetXPM() const override;
+    const char **GetXPM() const override;
     us::ModuleResource GetCursorIconResource() const override;
     us::ModuleResource GetIconResource() const override;
 
     const char *GetName() const override;
 
   protected:
-    FillRegionTool(); // purposely hidden
-    ~FillRegionTool() override;
+    void PrepareFilling(const Image* workingSlice, Point3D seedPoint) override;
+
+    FillRegionTool() = default; // purposely hidden
+    ~FillRegionTool() = default;
   };
 
 } // namespace

@@ -26,6 +26,10 @@ found in the LICENSE file.
 
 #include <fstream>
 
+#if !defined(MITK_WINDOWS_NO_UNDEF) && defined(GetTempPath)
+  #undef GetTempPath
+#endif
+
 namespace us
 {
   class ModuleResource;
@@ -33,6 +37,8 @@ namespace us
 
 namespace mitk
 {
+  class PropertyList;
+
   /**
    * \ingroup IO
    *
@@ -43,7 +49,7 @@ namespace mitk
   class MITKCORE_EXPORT IOUtil
   {
   public:
-    /**Struct that containes information regarding the current loading process. (e.g. Path that should be loaded,
+    /**Struct that contains information regarding the current loading process. (e.g. Path that should be loaded,
     all found readers for the load path,...). It is set be IOUtil and used to pass information via the option callback
     in load operations.
     */
@@ -56,10 +62,12 @@ namespace mitk
 
       FileReaderSelector m_ReaderSelector;
       bool m_Cancel;
+
+      const PropertyList* m_Properties;
     };
 
     /**Struct that is the base class for option callbacks used in load operations. The callback is used by IOUtil, if
-    more than one suitable reader was found or the a reader containes options that can be set. The callback allows to
+    more than one suitable reader was found or the a reader contains options that can be set. The callback allows to
     change option settings and select the reader that should be used (via loadInfo).
     */
     struct MITKCORE_EXPORT ReaderOptionsFunctorBase
@@ -87,7 +95,7 @@ namespace mitk
     };
 
     /**Struct that is the base class for option callbacks used in save operations. The callback is used by IOUtil, if
-    more than one suitable writer was found or the a writer containes options that can be set. The callback allows to
+    more than one suitable writer was found or the a writer contains options that can be set. The callback allows to
     change option settings and select the writer that should be used (via saveInfo).
     */
     struct MITKCORE_EXPORT WriterOptionsFunctorBase
@@ -123,7 +131,7 @@ namespace mitk
      * and opens the file using the output stream \c tmpStream and returns the name of
      * the newly create file.
      *
-     * The \c templateName argument must contain six consective 'X' characters ("XXXXXX")
+     * The \c templateName argument must contain six consecutive 'X' characters ("XXXXXX")
      * and these are replaced with a string that makes the filename unique.
      *
      * The file is created with read and write permissions for owner only.
@@ -148,7 +156,7 @@ namespace mitk
      * mode \c mode and returns the name of the newly create file. The open mode is always
      * OR'd with <code>std::ios_base::out | std::ios_base::trunc</code>.
      *
-     * The \c templateName argument must contain six consective 'X' characters ("XXXXXX")
+     * The \c templateName argument must contain six consecutive 'X' characters ("XXXXXX")
      * and these are replaced with a string that makes the filename unique.
      *
      * The file is created with read and write permissions for owner only.
@@ -331,6 +339,8 @@ namespace mitk
       return dynamic_cast<T*>(Load(usResource, mode).at(0).GetPointer());
     }
 
+    static BaseData::Pointer Load(const std::string& path, const PropertyList* properties);
+
     /**
      * @brief Save a mitk::BaseData instance.
      * @param data The data to save.
@@ -408,28 +418,6 @@ namespace mitk
      * @see Save(const mitk::BaseData*, const std::string&)
      */
     static void Save(std::vector<SaveInfo> &saveInfos, bool setPathProperty = false);
-
-    /**
-     * @brief Convert a string encoded with the current code page to an UTF-8 encoded string (Windows)
-     *
-     * The conversion happens on Windows only. On all other platforms, the input string
-     * is returned unmodified as it is assumed to be UTF-8 encoded already.
-     *
-     * If the conversion fails, a warning is printed and the input string is returned
-     * instead. This matches the behavior before this method was introduced.
-     */
-    static std::string Local8BitToUtf8(const std::string& local8BitStr);
-
-    /**
-     * @brief Convert a UTF-8 encoded string to a string encoded with the current code page (Windows)
-     *
-     * The conversion happens on Windows only. On all other platforms, the input string
-     * is returned unmodified as strings are assumed to be always UTF-8 encoded by default.
-     *
-     * If the conversion fails, a warning is printed and the input string is returned
-     * instead. This matches the behavior before this method was introduced.
-     */
-    static std::string Utf8ToLocal8Bit(const std::string& utf8Str);
 
   protected:
     static std::string Load(std::vector<LoadInfo> &loadInfos,

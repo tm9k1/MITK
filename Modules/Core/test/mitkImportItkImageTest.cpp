@@ -33,7 +33,7 @@ typename itk::Image<TPixel, VDimension>::Pointer CreateTestImageRandom(short int
   regionSize.Fill(size);
 
   typename itk::RandomImageSource<ImageType>::Pointer randomImageSource = itk::RandomImageSource<ImageType>::New();
-  randomImageSource->SetNumberOfThreads(1); // to produce non-random results
+  randomImageSource->SetNumberOfWorkUnits(1); // to produce non-random results
   randomImageSource->SetSize(regionSize);
   randomImageSource->Update();
 
@@ -258,8 +258,8 @@ void Assert_ItkVectorImageImportAndCast_ReturnsTrue()
 
   mitk::Image::Pointer mitkImage = mitk::ImportItkImage(itkImage);
   mitk::PixelType pixelType = mitkImage->GetPixelType();
-  MITK_TEST_CONDITION(pixelType.GetPixelType() == itk::ImageIOBase::VECTOR, "Vector image pixel type")
-  MITK_TEST_CONDITION(pixelType.GetComponentType() == itk::ImageIOBase::SHORT, "Vector image component type")
+  MITK_TEST_CONDITION(pixelType.GetPixelType() == itk::IOPixelEnum::VECTOR, "Vector image pixel type")
+  MITK_TEST_CONDITION(pixelType.GetComponentType() == itk::IOComponentEnum::SHORT, "Vector image component type")
 
   mitk::Image::Pointer mitkImage2;
   mitk::CastToMitkImage(itkImage, mitkImage2);
@@ -285,20 +285,20 @@ int mitkImportItkImageTest(int /*argc*/, char * /*argv*/ [])
 {
   MITK_TEST_BEGIN("mitkImportItkImageTest")
 
-  Assert_ItkImageImportSucceded_ReturnsTrue<short, 3>();         // "Import succesfull on 3D short");
-  Assert_ItkImageImportSucceded_ReturnsTrue<float, 3>();         // "Import succesfull on float");
-  Assert_ItkImageImportSucceded_ReturnsTrue<unsigned char, 3>(); // "Import succesfull on uchar");
-  Assert_ItkImageImportSucceded_ReturnsTrue<int, 3>();           // "Import succesfull on int");
+  Assert_ItkImageImportSucceded_ReturnsTrue<short, 3>();         // "Import successful on 3D short");
+  Assert_ItkImageImportSucceded_ReturnsTrue<float, 3>();         // "Import successful on float");
+  Assert_ItkImageImportSucceded_ReturnsTrue<unsigned char, 3>(); // "Import successful on uchar");
+  Assert_ItkImageImportSucceded_ReturnsTrue<int, 3>();           // "Import successful on int");
 
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<short, 3>();         // "Import succesfull on 3D short");
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<float, 3>();         // "Import succesfull on float");
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<unsigned char, 3>(); // "Import succesfull on uchar");
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<int, 3>();           // "Import succesfull on int");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<short, 3>();         // "Import successful on 3D short");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<float, 3>();         // "Import successful on float");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<unsigned char, 3>(); // "Import successful on uchar");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<int, 3>();           // "Import successful on int");
 
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<short, 4>();         // "Import succesfull on 3D short");
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<float, 4>();         // "Import succesfull on float");
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<unsigned char, 4>(); // "Import succesfull on uchar");
-  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<int, 4>();           // "Import succesfull on int");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<short, 4>();         // "Import successful on 3D short");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<float, 4>();         // "Import successful on float");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<unsigned char, 4>(); // "Import successful on uchar");
+  Assert_ItkImageImportRandomValuesSucceded_ReturnsTrue<int, 4>();           // "Import successful on int");
 
   Assert_ItkVectorImageImportAndCast_ReturnsTrue();
 

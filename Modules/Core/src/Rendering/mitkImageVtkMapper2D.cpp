@@ -121,7 +121,7 @@ void mitk::ImageVtkMapper2D::GeneratePlane(mitk::BaseRenderer *renderer, double 
   localStorage->m_Plane->SetOrigin(planeBounds[0], planeBounds[2], depth);
   // These two points define the axes of the plane in combination with the origin.
   // Point 1 is the x-axis and point 2 the y-axis.
-  // Each plane is transformed according to the view (axial, coronal and saggital) afterwards.
+  // Each plane is transformed according to the view (axial, coronal and sagittal) afterwards.
   localStorage->m_Plane->SetPoint1(planeBounds[1], planeBounds[2], depth); // P1: (xMax, yMin, depth)
   localStorage->m_Plane->SetPoint2(planeBounds[0], planeBounds[3], depth); // P2: (xMin, yMax, depth)
 }
@@ -233,7 +233,7 @@ void mitk::ImageVtkMapper2D::GenerateDataForRenderer(mitk::BaseRenderer *rendere
     localStorage->m_Reslicer->SetInterpolationMode(ExtractSliceFilter::RESLICE_NEAREST);
   }
 
-  // set the vtk output property to true, makes sure that no unneeded mitk image convertion
+  // set the vtk output property to true, makes sure that no unneeded mitk image conversion
   // is done.
   localStorage->m_Reslicer->SetVtkOutputRequest(true);
 
@@ -312,7 +312,7 @@ void mitk::ImageVtkMapper2D::GenerateDataForRenderer(mitk::BaseRenderer *rendere
   }
   else
   {
-    // this is needed when thick mode was enable bevore. These variable have to be reset to default values
+    // this is needed when thick mode was enable before. These variable have to be reset to default values
     localStorage->m_Reslicer->SetOutputDimensionality(2);
     localStorage->m_Reslicer->SetOutputSpacingZDirection(1.0);
     localStorage->m_Reslicer->SetOutputExtentZDirection(0, 0);
@@ -369,14 +369,14 @@ void mitk::ImageVtkMapper2D::GenerateDataForRenderer(mitk::BaseRenderer *rendere
     if (binaryOutline) // contour rendering
     {
       // get pixel type of vtk image
-      itk::ImageIOBase::IOComponentType componentType = static_cast<itk::ImageIOBase::IOComponentType>(image->GetPixelType().GetComponentType());
+      auto componentType = image->GetPixelType().GetComponentType();
       switch (componentType)
       {
-      case itk::ImageIOBase::UCHAR:
+      case itk::IOComponentEnum::UCHAR:
         // generate contours/outlines
         localStorage->m_OutlinePolyData = CreateOutlinePolyData<unsigned char>(renderer);
         break;
-      case itk::ImageIOBase::USHORT:
+      case itk::IOComponentEnum::USHORT:
         // generate contours/outlines
         localStorage->m_OutlinePolyData = CreateOutlinePolyData<unsigned short>(renderer);
         break;
@@ -638,7 +638,7 @@ void mitk::ImageVtkMapper2D::ApplyLookuptable(mitk::BaseRenderer *renderer)
     //"Image Rendering.Mode was set to use a lookup table but there is no property 'LookupTable'.
     // A default (rainbow) lookup table will be used.
     // Here have to do nothing. Warning for the user has been removed, due to unwanted console output
-    // in every interation of the rendering.
+    // in every iteration of the rendering.
   }
   localStorage->m_LevelWindowFilter->SetLookupTable(usedLookupTable);
 }
@@ -792,7 +792,7 @@ void mitk::ImageVtkMapper2D::SetDefaultProperties(mitk::DataNode *node, mitk::Ba
     PixelType pixelType = image->GetPixelType();
     size_t numComponents = pixelType.GetNumberOfComponents();
 
-    if ((pixelType.GetPixelType() == itk::ImageIOBase::VECTOR && numComponents > 1) || numComponents == 2 ||
+    if ((pixelType.GetPixelType() == itk::IOPixelEnum::VECTOR && numComponents > 1) || numComponents == 2 ||
         numComponents > 4)
     {
       node->AddProperty("Image.Displayed Component", mitk::IntProperty::New(0), renderer, overwrite);
@@ -871,8 +871,8 @@ void mitk::ImageVtkMapper2D::SetDefaultProperties(mitk::DataNode *node, mitk::Ba
     }
 
     if (((overwrite) || (node->GetProperty("opaclevelwindow", renderer) == nullptr)) &&
-        (image->GetPixelType().GetPixelType() == itk::ImageIOBase::RGBA) &&
-        (image->GetPixelType().GetComponentType() == itk::ImageIOBase::UCHAR))
+        (image->GetPixelType().GetPixelType() == itk::IOPixelEnum::RGBA) &&
+        (image->GetPixelType().GetComponentType() == itk::IOComponentEnum::UCHAR))
     {
       mitk::LevelWindow opaclevwin;
       opaclevwin.SetRangeMinMax(0, 255);
@@ -1056,11 +1056,11 @@ vtkSmartPointer<vtkPolyData> mitk::ImageVtkMapper2D::CreateOutlinePolyData(mitk:
 void mitk::ImageVtkMapper2D::TransformActor(mitk::BaseRenderer *renderer)
 {
   LocalStorage *localStorage = m_LSH.GetLocalStorage(renderer);
-  // get the transformation matrix of the reslicer in order to render the slice as axial, coronal or saggital
+  // get the transformation matrix of the reslicer in order to render the slice as axial, coronal or sagittal
   vtkSmartPointer<vtkTransform> trans = vtkSmartPointer<vtkTransform>::New();
   vtkSmartPointer<vtkMatrix4x4> matrix = localStorage->m_Reslicer->GetResliceAxes();
   trans->SetMatrix(matrix);
-  // transform the plane/contour (the actual actor) to the corresponding view (axial, coronal or saggital)
+  // transform the plane/contour (the actual actor) to the corresponding view (axial, coronal or sagittal)
   localStorage->m_ImageActor->SetUserTransform(trans);
   // transform the origin to center based coordinates, because MITK is center based.
   localStorage->m_ImageActor->SetPosition(-0.5 * localStorage->m_mmPerPixel[0], -0.5 * localStorage->m_mmPerPixel[1], 0.0);

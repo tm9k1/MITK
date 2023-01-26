@@ -28,7 +28,6 @@ namespace mitk
 
    \sa FeedbackContourTool
    \sa ExtractImageFilter
-   \sa OverwriteSliceImageFilter
 
    \ingroup Interaction
    \ingroup ToolManagerEtAl
@@ -50,7 +49,7 @@ namespace mitk
     void SetSize(int value);
 
   protected:
-    PaintbrushTool(int paintingPixelValue = 1); // purposely hidden
+    PaintbrushTool(bool startWithFillMode = true); // purposely hidden
     ~PaintbrushTool() override;
 
     void ConnectActionsAndFunctions() override;
@@ -63,6 +62,7 @@ namespace mitk
     virtual void OnPrimaryButtonPressedMoved(StateMachineAction *, InteractionEvent *);
     virtual void MouseMoved(mitk::InteractionEvent *interactionEvent, bool leftMouseButtonPressed);
     virtual void OnMouseReleased(StateMachineAction *, InteractionEvent *);
+    void UpdateFeedbackColor();
     virtual void OnInvertLogic(StateMachineAction *, InteractionEvent *);
 
     /**
@@ -77,23 +77,29 @@ namespace mitk
     mitk::Point2D upperLeft(mitk::Point2D p);
 
     /**
-      * Checks  if the current slice has changed
+      * Checks  if the current slice has changed and updates (if needed m_CurrentPlane).
       */
-    void CheckIfCurrentSliceHasChanged(const InteractionPositionEvent *event);
+    bool CheckIfCurrentSliceHasChanged(const InteractionPositionEvent *event);
+
+    void ResetWorkingSlice(const InteractionPositionEvent* event);
 
     void OnToolManagerWorkingDataModified();
 
-    int m_PaintingPixelValue;
+    bool m_FillMode;
     static int m_Size;
 
     ContourModel::Pointer m_MasterContour;
 
     int m_LastContourSize;
 
+    const int m_InternalFillValue = 255;
+
     Image::Pointer m_WorkingSlice;
+    Image::Pointer m_PaintingSlice;
     PlaneGeometry::ConstPointer m_CurrentPlane;
-    DataNode::Pointer m_WorkingNode;
+    DataNode::Pointer m_PaintingNode;
     mitk::Point3D m_LastPosition;
+
   };
 
 } // namespace

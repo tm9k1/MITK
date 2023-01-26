@@ -26,6 +26,7 @@ found in the LICENSE file.
 #include <usModuleResource.h>
 #include <usModuleResourceStream.h>
 #include <mitkAbstractFileReader.h>
+#include <mitkUtf8Util.h>
 
 // ITK
 #include <itksys/SystemTools.hxx>
@@ -37,45 +38,6 @@ found in the LICENSE file.
 
 #include <cerrno>
 #include <cstdlib>
-
-#ifdef US_PLATFORM_WINDOWS
-
-#include <Windows.h>
-
-namespace
-{
-  std::wstring MultiByteToWideChar(const std::string& mbString, UINT codePage)
-  {
-    auto numChars = ::MultiByteToWideChar(codePage, 0, mbString.data(), mbString.size(), nullptr, 0);
-
-    if (0 >= numChars)
-      mitkThrow() << "Failure to convert multi-byte character string to wide character string";
-
-    std::wstring wString;
-    wString.resize(numChars);
-
-    ::MultiByteToWideChar(codePage, 0, mbString.data(), mbString.size(), &wString[0], static_cast<int>(wString.size()));
-
-    return wString;
-  }
-
-  std::string WideCharToMultiByte(const std::wstring& wString, UINT codePage)
-  {
-    auto numChars = ::WideCharToMultiByte(codePage, 0, wString.data(), wString.size(), nullptr, 0, nullptr, nullptr);
-
-    if (0 >= numChars)
-      mitkThrow() << "Failure to convert wide character string to multi-byte character string";
-
-    std::string mbString;
-    mbString.resize(numChars);
-
-    ::WideCharToMultiByte(codePage, 0, wString.data(), wString.size(), &mbString[0], static_cast<int>(mbString.size()), nullptr, nullptr);
-
-    return mbString;
-  }
-}
-
-#endif
 
 static std::string GetLastErrorStr()
 {
@@ -107,7 +69,7 @@ static std::string GetLastErrorStr()
 #include <direct.h>
 #include <io.h>
 
-// make the posix flags point to the obsolte bsd types on windows
+// make the posix flags point to the obsolete bsd types on windows
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
 
@@ -363,38 +325,6 @@ namespace mitk
     return baseDataList.front();
   }
 
-  std::string IOUtil::Local8BitToUtf8(const std::string& local8BitStr)
-  {
-#ifdef US_PLATFORM_WINDOWS
-    try
-    {
-      return WideCharToMultiByte(MultiByteToWideChar(local8BitStr, CP_ACP), CP_UTF8);
-    }
-    catch (const mitk::Exception&)
-    {
-      MITK_WARN << "String conversion from current code page to UTF-8 failed. Input string is returned unmodified.";
-    }
-#endif
-
-    return local8BitStr;
-  }
-
-  std::string IOUtil::Utf8ToLocal8Bit(const std::string& utf8Str)
-  {
-#ifdef US_PLATFORM_WINDOWS
-    try
-    {
-      return WideCharToMultiByte(MultiByteToWideChar(utf8Str, CP_UTF8), CP_ACP);
-    }
-    catch (const mitk::Exception&)
-    {
-      MITK_WARN << "String conversion from UTF-8 to current code page failed. Input string is returned unmodified.";
-    }
-#endif
-
-    return utf8Str;
-  }
-
 #ifdef US_PLATFORM_WINDOWS
   std::string IOUtil::GetProgramPath()
   {
@@ -451,13 +381,13 @@ namespace mitk
     {
 #ifdef US_PLATFORM_WINDOWS
       char tempPathTestBuffer[1];
-      DWORD bufferLength = ::GetTempPath(1, tempPathTestBuffer);
+      DWORD bufferLength = GetTempPathA(1, tempPathTestBuffer);
       if (bufferLength == 0)
       {
         mitkThrow() << GetLastErrorStr();
       }
       std::vector<char> tempPath(bufferLength);
-      bufferLength = ::GetTempPath(bufferLength, &tempPath[0]);
+      bufferLength = GetTempPathA(bufferLength, &tempPath[0]);
       if (bufferLength == 0)
       {
         mitkThrow() << GetLastErrorStr();
@@ -604,7 +534,7 @@ namespace mitk
     std::vector<LoadInfo> loadInfos;
     for (const auto &loadInfo : paths)
     {
-      loadInfos.push_back(loadInfo);
+      loadInfos.emplace_back(loadInfo);
     }
     std::string errMsg = Load(loadInfos, nodeResult, &storage, optionsCallback);
     if (!errMsg.empty())
@@ -620,7 +550,7 @@ namespace mitk
     std::vector<LoadInfo> loadInfos;
     for (const auto &loadInfo : paths)
     {
-      loadInfos.push_back(loadInfo);
+      loadInfos.emplace_back(loadInfo);
     }
     std::string errMsg = Load(loadInfos, nullptr, nullptr, optionsCallback);
     if (!errMsg.empty())
@@ -663,7 +593,7 @@ namespace mitk
 
       if (readers.empty())
       {
-        if (!itksys::SystemTools::FileExists(loadInfo.m_Path.c_str()))
+        if (!itksys::SystemTools::FileExists(Utf8Util::Local8BitToUtf8(loadInfo.m_Path).c_str()))
         {
           errMsg += "File '" + loadInfo.m_Path + "' does not exist\n";
         }
@@ -738,6 +668,8 @@ namespace mitk
         break;
       }
 
+      reader->SetProperties(loadInfo.m_Properties);
+
       // Do the actual reading
       try
       {
@@ -778,9 +710,7 @@ namespace mitk
             continue;
           }
 
-          auto path = Local8BitToUtf8(loadInfo.m_Path);
-          auto pathProp = mitk::StringProperty::New(path);
-          data->SetProperty("path", pathProp);
+          data->SetProperty("path", mitk::StringProperty::New(Utf8Util::Local8BitToUtf8(loadInfo.m_Path)));
 
           loadInfo.m_Output.push_back(data);
           if (nodeResult)
@@ -796,7 +726,7 @@ namespace mitk
       }
       catch (const std::exception &e)
       {
-        errMsg += "Exception occured when reading file " + loadInfo.m_Path + ":\n" + e.what() + "\n\n";
+        errMsg += "Exception occurred when reading file " + loadInfo.m_Path + ":\n" + e.what() + "\n\n";
       }
       mitk::ProgressBar::GetInstance()->Progress(2);
       --filesToRead;
@@ -841,6 +771,22 @@ namespace mitk
     return data;
   }
 
+  BaseData::Pointer IOUtil::Load(const std::string& path, const PropertyList* properties)
+  {
+    LoadInfo loadInfo(path);
+    loadInfo.m_Properties = properties;
+
+    std::vector<LoadInfo> loadInfos;
+    loadInfos.push_back(loadInfo);
+
+    auto errMsg = Load(loadInfos, nullptr, nullptr, nullptr);
+
+    if (!errMsg.empty())
+      mitkThrow() << errMsg;
+
+    return loadInfos.front().m_Output.front();
+  }
+
   void IOUtil::Save(const BaseData *data, const std::string &path, bool setPathProperty) { Save(data, path, IFileWriter::Options(), setPathProperty); }
   void IOUtil::Save(const BaseData *data, const std::string &path, const IFileWriter::Options &options, bool setPathProperty)
   {
@@ -860,7 +806,7 @@ namespace mitk
                     bool setPathProperty)
   {
     if ((data == nullptr) || (data->IsEmpty()))
-      mitkThrow() << "BaseData cannotbe null or empty for save methods in IOUtil.h.";
+      mitkThrow() << "BaseData cannot be null or empty for save methods in IOUtil.h.";
 
     std::string errMsg;
     if (options.empty())
@@ -906,7 +852,7 @@ namespace mitk
 
     SaveInfo saveInfo(data, mimeType, path);
 
-    std::string ext = itksys::SystemTools::GetFilenameExtension(path);
+    std::string ext = Utf8Util::Utf8ToLocal8Bit(itksys::SystemTools::GetFilenameExtension(Utf8Util::Local8BitToUtf8(path)));
 
     if (saveInfo.m_WriterSelector.IsEmpty())
     {
@@ -918,7 +864,8 @@ namespace mitk
     // Add an extension if not already specified
     if (ext.empty() && addExtension)
     {
-      saveInfo.m_MimeType.GetExtensions().empty() ? std::string() : "." + saveInfo.m_MimeType.GetExtensions().front();
+      ext = saveInfo.m_MimeType.GetExtensions().empty() ? std::string() : "." + saveInfo.m_MimeType.GetExtensions().front();
+      saveInfo.m_Path += ext;
     }
 
     std::vector<SaveInfo> infos;
@@ -1017,7 +964,7 @@ namespace mitk
       }
 
       if (setPathProperty)
-        saveInfo.m_BaseData->GetPropertyList()->SetStringProperty("path", Local8BitToUtf8(saveInfo.m_Path).c_str());
+        saveInfo.m_BaseData->GetPropertyList()->SetStringProperty("path", Utf8Util::Local8BitToUtf8(saveInfo.m_Path).c_str());
 
       mitk::ProgressBar::GetInstance()->Progress(2);
       --filesToWrite;
@@ -1058,5 +1005,11 @@ namespace mitk
     return r < 0;
   }
 
-  IOUtil::LoadInfo::LoadInfo(const std::string &path) : m_Path(path), m_ReaderSelector(path), m_Cancel(false) {}
+  IOUtil::LoadInfo::LoadInfo(const std::string &path)
+    : m_Path(path),
+      m_ReaderSelector(path),
+      m_Cancel(false),
+      m_Properties(nullptr)
+  {
+  }
 }

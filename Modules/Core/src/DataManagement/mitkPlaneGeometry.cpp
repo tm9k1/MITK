@@ -118,7 +118,7 @@ namespace mitk
   void PlaneGeometry::InitializeStandardPlane(mitk::ScalarType width,
                                               ScalarType height,
                                               const Vector3D &spacing,
-                                              PlaneGeometry::PlaneOrientation planeorientation,
+                                              AnatomicalPlane planeorientation,
                                               ScalarType zPosition,
                                               bool frontside,
                                               bool rotated,
@@ -143,7 +143,7 @@ namespace mitk
   void PlaneGeometry::InitializeStandardPlane(mitk::ScalarType width,
                                               mitk::ScalarType height,
                                               const AffineTransform3D *transform /* = nullptr */,
-                                              PlaneGeometry::PlaneOrientation planeorientation /* = Axial */,
+                                              AnatomicalPlane planeorientation /* = Axial */,
                                               mitk::ScalarType zPosition /* = 0 */,
                                               bool frontside /* = true */,
                                               bool rotated /* = false */,
@@ -154,7 +154,7 @@ namespace mitk
     /// construct standard view.
 
     // We define at the moment "frontside" as: axial from above,
-    // coronal from front (nose), saggital from right.
+    // coronal from front (nose), sagittal from right.
     // TODO: Double check with medicals doctors or radiologists [ ].
 
     // We define the orientation in patient's view, e.g. LAI is in a axial cut
@@ -187,10 +187,10 @@ namespace mitk
 
     switch (planeorientation) // Switch through our limited choice of standard planes:
     {
-      case None:
-      /** Orientation 'None' shall be done like the axial plane orientation,
+      case AnatomicalPlane::Original:
+      /** Orientation 'Original' shall be done like the axial plane,
        *  for whatever reasons. */
-      case Axial:
+      case AnatomicalPlane::Axial:
         if (frontside) // Radiologist's view from below. A cut along the triangle ear-ear-nose.
         {
           if (rotated == false)
@@ -237,8 +237,7 @@ namespace mitk
         normalDirection = 2; // That is S=Superior=z=third_axis=middlefinger in righthanded LPS-system.
         break;
 
-      // Frontal is known as Coronal in mitk. Plane cuts through patient's ear-ear-heel-heel:
-      case Frontal:
+      case AnatomicalPlane::Coronal: // Coronal=Frontal plane; cuts through patient's ear-ear-heel-heel:
         if (frontside)
         {
           if (rotated == false) // x=[1; 0; 0], y=[0; 0; 1], z=[0; 1; 0], origin=[0,zpos,0]: LAI (r.h.)
@@ -272,7 +271,7 @@ namespace mitk
         normalDirection = 1; // Normal vector = posterior direction.
         break;
 
-      case Sagittal: // Sagittal=Medial plane, the symmetry-plane mirroring your face.
+      case AnatomicalPlane::Sagittal: // Sagittal=Medial plane, the symmetry-plane mirroring your face.
         if (frontside)
         {
           if (rotated == false) //  x=[0;1;0], y=[0;0;1], z=[1;0;0], origin=[zpos,0,0]:  LAI (r.h.)
@@ -307,7 +306,7 @@ namespace mitk
         break;
 
       default:
-        itkExceptionMacro("unknown PlaneOrientation");
+        itkExceptionMacro("unknown AnatomicalPlane");
     }
 
     VnlVector normal(3);
@@ -317,9 +316,9 @@ namespace mitk
     if ( transform != nullptr )
     {
       origin = transform->TransformPoint( origin );
-      rightDV = transform->TransformVector( rightDV );
-      bottomDV = transform->TransformVector( bottomDV );
-      normal = transform->TransformVector( normal );
+      rightDV = transform->TransformVector( rightDV ).as_ref();
+      bottomDV = transform->TransformVector( bottomDV ).as_ref();
+      normal = transform->TransformVector( normal ).as_ref();
     }
 
     ScalarType bounds[6] = {0, width, 0, height, 0, 1};
@@ -327,9 +326,9 @@ namespace mitk
 
     AffineTransform3D::Pointer planeTransform = AffineTransform3D::New();
     Matrix3D matrix;
-    matrix.GetVnlMatrix().set_column(0, rightDV);
-    matrix.GetVnlMatrix().set_column(1, bottomDV);
-    matrix.GetVnlMatrix().set_column(2, normal);
+    matrix.GetVnlMatrix().set_column(0, rightDV.as_ref());
+    matrix.GetVnlMatrix().set_column(1, bottomDV.as_ref());
+    matrix.GetVnlMatrix().set_column(2, normal.as_ref());
     planeTransform->SetMatrix(matrix);
     planeTransform->SetOffset(this->GetIndexToWorldTransform()->GetOffset());
     this->SetIndexToWorldTransform(planeTransform);
@@ -375,7 +374,7 @@ namespace mitk
   }
 
   void PlaneGeometry::InitializeStandardPlane(const BaseGeometry *geometry3D,
-                                              PlaneOrientation planeorientation,
+                                              AnatomicalPlane planeorientation,
                                               ScalarType zPosition,
                                               bool frontside,
                                               bool rotated,
@@ -442,23 +441,23 @@ namespace mitk
 
     switch(planeorientation)
     {
-    case None:
-    /** Orientation 'None' shall be done like the axial plane orientation,
+    case AnatomicalPlane::Original:
+    /** Orientation 'Original' shall be done like the axial plane orientation,
      *  for whatever reasons. */
-    case Axial:
+    case AnatomicalPlane::Axial:
       width  = extents[0];
       height = extents[1];
       break;
-    case Frontal:
+    case AnatomicalPlane::Coronal:
       width  = extents[0];
       height = extents[2];
       break;
-    case Sagittal:
+    case AnatomicalPlane::Sagittal:
       width  = extents[1];
       height = extents[2];
       break;
     default:
-      itkExceptionMacro("unknown PlaneOrientation");
+      itkExceptionMacro("unknown AnatomicalPlane");
     }
 
     ScalarType bounds[6]= { 0, width, 0, height, 0, 1 };
@@ -472,27 +471,30 @@ namespace mitk
       width, height, transform, planeorientation, zPosition, frontside, rotated, top);
   }
 
-  void PlaneGeometry::InitializeStandardPlane(
-    const BaseGeometry *geometry3D, bool top, PlaneOrientation planeorientation, bool frontside, bool rotated)
+  void PlaneGeometry::InitializeStandardPlane(const BaseGeometry *geometry3D,
+                                              bool top,
+                                              AnatomicalPlane planeorientation,
+                                              bool frontside,
+                                              bool rotated)
   {
     /// The index of the sagittal, coronal and axial axes in world coordinate system.
     int worldAxis;
     switch(planeorientation)
     {
-    case None:
-    /** Orientation 'None' shall be done like the axial plane orientation,
+    case AnatomicalPlane::Original:
+    /** Orientation 'Original' shall be done like the axial plane orientation,
      *  for whatever reasons. */
-    case Axial:
+    case AnatomicalPlane::Axial:
       worldAxis = 2;
       break;
-    case Frontal:
+    case AnatomicalPlane::Coronal:
       worldAxis = 1;
       break;
-    case Sagittal:
+    case AnatomicalPlane::Sagittal:
       worldAxis = 0;
       break;
     default:
-      itkExceptionMacro("unknown PlaneOrientation");
+      itkExceptionMacro("unknown AnatomicalPlane");
     }
 
     // Inspired by:
@@ -623,14 +625,14 @@ namespace mitk
   Vector3D PlaneGeometry::GetNormal() const
   {
     Vector3D frontToBack;
-    frontToBack.SetVnlVector(this->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2));
+    frontToBack.SetVnlVector(this->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2).as_ref());
 
     return frontToBack;
   }
 
   VnlVector PlaneGeometry::GetNormalVnl() const
   {
-    return this->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2);
+    return this->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(2).as_ref();
   }
 
   ScalarType PlaneGeometry::DistanceFromPlane(const Point3D &pt3d_mm) const { return fabs(SignedDistance(pt3d_mm)); }
@@ -647,7 +649,7 @@ namespace mitk
       return SignedDistanceFromPlane(pt3d_mm) > 0;
   }
 
-  bool PlaneGeometry::IntersectionLine(const PlaneGeometry *plane, Line3D &crossline) const
+  bool PlaneGeometry::IntersectionLine(const PlaneGeometry* plane, Line3D& crossline) const
   {
     Vector3D normal = this->GetNormal();
     normal.Normalize();
@@ -675,7 +677,9 @@ namespace mitk
     double c2 = (d2 - d1 * N1dN2) / determinant;
 
     Vector3D p = normal * c1 + planeNormal * c2;
-    crossline.GetPoint().GetVnlVector() = p.GetVnlVector();
+    crossline.GetPoint()[0] = p.GetVnlVector()[0];
+    crossline.GetPoint()[1] = p.GetVnlVector()[1];
+    crossline.GetPoint()[2] = p.GetVnlVector()[2];
 
     return true;
   }
@@ -867,12 +871,12 @@ namespace mitk
 
   void PlaneGeometry::Map(const mitk::Point2D &pt2d_mm, mitk::Point3D &pt3d_mm) const
   {
-    // pt2d_mm is measured from the origin of the world geometry (at leats it called form BaseRendere::Mouse...Event)
+    // pt2d_mm is measured from the origin of the world geometry (at least it called form BaseRendere::Mouse...Event)
     Point3D pt3d_units;
     pt3d_units[0] = pt2d_mm[0] / (GetExtentInMM(0) / GetExtent(0));
     pt3d_units[1] = pt2d_mm[1] / (GetExtentInMM(1) / GetExtent(1));
     pt3d_units[2] = 0;
-    // pt3d_units is a continuos index. We divided it with the Scale Factor (= spacing in x and y) to convert it from mm
+    // pt3d_units is a continuous index. We divided it with the Scale Factor (= spacing in x and y) to convert it from mm
     // to index units.
     //
     pt3d_mm = GetIndexToWorldTransform()->TransformPoint(pt3d_units);

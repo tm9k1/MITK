@@ -111,7 +111,7 @@ namespace mitk
         MITK_ERROR << "Write access not granted on mitk::Image.";
       }
 
-      // fill the buffer with the specifed value
+      // fill the buffer with the specified value
       for (unsigned int i = 0; i < output->GetVolumeData(0)->GetSize(); i++)
       {
         imageBuffer[i] = fill_value;
@@ -138,7 +138,7 @@ namespace mitk
       mitk::PixelType type = MakeScalarPixelType<TPixelType>();
       // type.Initialize(typeid(TPixelType));
 
-      // initialize the MITK image with given dimenion and data type
+      // initialize the MITK image with given dimension and data type
       mitk::Image::Pointer output = mitk::Image::New();
       auto dimensions = new unsigned int[4];
       unsigned int numberOfDimensions = 0;
@@ -201,24 +201,24 @@ namespace mitk
       {
         // the comparison of the component type is sufficient enough since the mitk::PixelType type object is
         // created as SCALAR and hence does not need the comparison against type.GetPixelTypeId() ==
-        // itk::ImageIOBase::SCALAR
-        if (type.GetComponentType() == itk::ImageIOBase::INT) // call integer function
+        // itk::IOPixelEnum::SCALAR
+        if (type.GetComponentType() == itk::IOComponentEnum::INT) // call integer function
         {
           imageBuffer[i] = (TPixelType)randomGenerator->GetIntegerVariate((int)randomMax);
           // TODO random generator does not support integer values in a given range (e.g. from 5-10)
           // range is always [0, (int)randomMax]
         }
-        else if ((type.GetComponentType() == itk::ImageIOBase::DOUBLE) ||
-                 (type.GetComponentType() == itk::ImageIOBase::FLOAT)) // call floating point function
+        else if ((type.GetComponentType() == itk::IOComponentEnum::DOUBLE) ||
+                 (type.GetComponentType() == itk::IOComponentEnum::FLOAT)) // call floating point function
         {
           imageBuffer[i] = (TPixelType)randomGenerator->GetUniformVariate(randMin, randomMax);
         }
-        else if (type.GetComponentType() == itk::ImageIOBase::UCHAR)
+        else if (type.GetComponentType() == itk::IOComponentEnum::UCHAR)
         {
           // use the integer randomGenerator with mod 256 to generate unsigned char values
           imageBuffer[i] = (unsigned char)((int)randomGenerator->GetIntegerVariate((int)randomMax)) % 256;
         }
-        else if (type.GetComponentType() == itk::ImageIOBase::USHORT)
+        else if (type.GetComponentType() == itk::IOComponentEnum::USHORT)
         {
           imageBuffer[i] = (unsigned short)((int)randomGenerator->GetIntegerVariate((int)randomMax)) % 65536;
         }

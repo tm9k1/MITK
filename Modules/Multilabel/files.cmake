@@ -4,6 +4,7 @@ set(CPP_FILES
   mitkLabelSetImage.cpp
   mitkLabelSetImageConverter.cpp
   mitkLabelSetImageSource.cpp
+  mitkLabelSetImageHelper.cpp
   mitkLabelSetImageSurfaceStampFilter.cpp
   mitkLabelSetImageToSurfaceFilter.cpp
   mitkLabelSetImageToSurfaceThreadedFilter.cpp
@@ -12,6 +13,7 @@ set(CPP_FILES
   mitkLabelSetIOHelper.cpp
   mitkDICOMSegmentationPropertyHelper.cpp
   mitkDICOMSegmentationConstants.cpp
+  mitkSegmentationTaskList.cpp
 )
 
 set(RESOURCE_FILES

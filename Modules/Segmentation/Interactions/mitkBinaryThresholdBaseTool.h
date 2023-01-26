@@ -13,10 +13,12 @@ found in the LICENSE file.
 #ifndef mitkBinaryThresholdBaseTool_h_Included
 #define mitkBinaryThresholdBaseTool_h_Included
 
-#include "mitkAutoSegmentationWithPreviewTool.h"
-#include "mitkCommon.h"
-#include "mitkDataNode.h"
 #include <MitkSegmentationExports.h>
+
+#include <mitkSegWithPreviewTool.h>
+
+#include <mitkCommon.h>
+#include <mitkDataNode.h>
 
 #include <itkBinaryThresholdImageFilter.h>
 #include <itkImage.h>
@@ -30,13 +32,13 @@ namespace mitk
   \sa mitk::Tool
   \sa QmitkInteractiveSegmentation
   */
-  class MITKSEGMENTATION_EXPORT BinaryThresholdBaseTool : public AutoSegmentationWithPreviewTool
+  class MITKSEGMENTATION_EXPORT BinaryThresholdBaseTool : public SegWithPreviewTool
   {
   public:
     Message3<double, double, bool> IntervalBordersChanged;
-    Message2<mitk::ScalarType, mitk::ScalarType> ThresholdingValuesChanged;
+    Message2<ScalarType, ScalarType> ThresholdingValuesChanged;
 
-    mitkClassMacro(BinaryThresholdBaseTool, AutoSegmentationWithPreviewTool);
+    mitkClassMacro(BinaryThresholdBaseTool, SegWithPreviewTool);
 
     virtual void SetThresholdValues(double lower, double upper);
 
@@ -48,21 +50,26 @@ namespace mitk
     itkGetMacro(LockedUpperThreshold, bool);
     itkBooleanMacro(LockedUpperThreshold);
 
-    itkGetMacro(SensibleMinimumThresholdValue, ScalarType);
-    itkGetMacro(SensibleMaximumThresholdValue, ScalarType);
+    itkGetMacro(SensibleMinimumThreshold, ScalarType);
+    itkGetMacro(SensibleMaximumThreshold, ScalarType);
 
     void InitiateToolByInput() override;
-    void DoUpdatePreview(const Image* inputAtTimeStep, const Image* oldSegAtTimeStep, Image* previewImage, TimeStepType timeStep) override;
+    void DoUpdatePreview(const Image* inputAtTimeStep, const Image* oldSegAtTimeStep, LabelSetImage* previewImage, TimeStepType timeStep) override;
+
+    template <typename TPixel, unsigned int VImageDimension>
+    void ITKThresholding(const itk::Image<TPixel, VImageDimension>* inputImage,
+      Image* segmentation, unsigned int timeStep);
 
   private:
-    ScalarType m_SensibleMinimumThresholdValue;
-    ScalarType m_SensibleMaximumThresholdValue;
-    ScalarType m_CurrentLowerThresholdValue;
-    ScalarType m_CurrentUpperThresholdValue;
+    ScalarType m_SensibleMinimumThreshold;
+    ScalarType m_SensibleMaximumThreshold;
+    ScalarType m_LowerThreshold;
+    ScalarType m_UpperThreshold;
 
     /** Indicates if the tool should behave like a single threshold tool (true)
       or like a upper/lower threshold tool (false)*/
     bool m_LockedUpperThreshold = false;
+
   };
 
 } // namespace

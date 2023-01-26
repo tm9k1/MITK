@@ -16,6 +16,7 @@ found in the LICENSE file.
 #include <mitkTestingMacros.h>
 
 #include "mitkIOUtil.h"
+#include <mitkUtf8Util.h>
 #include "mitkITKImageImport.h"
 #include <mitkExtractSliceFilter.h>
 
@@ -127,7 +128,7 @@ public:
       // test images
       unsigned int foundImagesCount = 0;
 
-      // if the image only contains one sinlge slice the itkImageSeriesWriter won't add a number like
+      // if the image only contains one single slice the itkImageSeriesWriter won't add a number like
       // filename.XX.extension
       if (image->GetDimension(2) == 1)
       {
@@ -176,7 +177,7 @@ public:
         mitk::IOUtil::Save(singleSliceImage, fullFileName);
 
         mitk::Image::Pointer compareImage = mitk::IOUtil::Load<mitk::Image>(fullFileName.c_str());
-        MITK_TEST_CONDITION_REQUIRED(compareImage.IsNotNull(), "Image stored was succesfully loaded again");
+        MITK_TEST_CONDITION_REQUIRED(compareImage.IsNotNull(), "Image stored was successfully loaded again");
 
         MITK_TEST_CONDITION_REQUIRED(
           CompareImageMetaData(singleSliceImage, compareImage, false),
@@ -206,9 +207,9 @@ public:
       mitk::IOUtil::Save(image, tmpFilePath);
 
       mitk::Image::Pointer compareImage = mitk::IOUtil::Load<mitk::Image>(tmpFilePath);
-      CPPUNIT_ASSERT_MESSAGE("Image stored in NRRD format was succesfully loaded again", compareImage.IsNotNull());
+      CPPUNIT_ASSERT_MESSAGE("Image stored in NRRD format was successfully loaded again", compareImage.IsNotNull());
 
-      /*It would make sence to check the images as well (see commented cppunit assert),
+      /*It would make sense to check the images as well (see commented cppunit assert),
         but currently there seems to be a problem (exception) with most of the test images
         (partly it seems to be a problem when try to access the pixel content by AccessByItk_1
         in mitk::CompareImageDataFilter.
@@ -247,15 +248,15 @@ public:
       mitk::IOUtil::Save(image, tmpFilePath);
 
       mitk::Image::Pointer compareImage = mitk::IOUtil::Load<mitk::Image>(tmpFilePath);
-      CPPUNIT_ASSERT_MESSAGE("Image stored in MHD format was succesfully loaded again! ", compareImage.IsNotNull());
+      CPPUNIT_ASSERT_MESSAGE("Image stored in MHD format was successfully loaded again! ", compareImage.IsNotNull());
 
       CPPUNIT_ASSERT_MESSAGE(".mhd file exists",
-                             itksys::SystemTools::FileExists((tmpFilePathWithoutExt + ".mhd").c_str()));
+                             itksys::SystemTools::FileExists(mitk::Utf8Util::Local8BitToUtf8(tmpFilePathWithoutExt + ".mhd").c_str()));
       CPPUNIT_ASSERT_MESSAGE(".raw or .zraw exists",
-                             itksys::SystemTools::FileExists((tmpFilePathWithoutExt + ".raw").c_str()) ||
-                               itksys::SystemTools::FileExists((tmpFilePathWithoutExt + ".zraw").c_str()));
+                             itksys::SystemTools::FileExists(mitk::Utf8Util::Local8BitToUtf8(tmpFilePathWithoutExt + ".raw").c_str()) ||
+                               itksys::SystemTools::FileExists(mitk::Utf8Util::Local8BitToUtf8(tmpFilePathWithoutExt + ".zraw").c_str()));
 
-      /*It would make sence to check the images as well (see commented cppunit assert),
+      /*It would make sense to check the images as well (see commented cppunit assert),
       but currently there seems to be a problem (exception) with most of the test images
       (partly it seems to be a problem when try to access the pixel content by AccessByItk_1
       in mitk::CompareImageDataFilter.
@@ -290,7 +291,7 @@ public:
     sourcefile = GetTestDataFilePath(sourcefile);
 
     // load image
-    CPPUNIT_ASSERT_MESSAGE("Checking whether source image exists", itksys::SystemTools::FileExists(sourcefile.c_str()));
+    CPPUNIT_ASSERT_MESSAGE("Checking whether source image exists", itksys::SystemTools::FileExists(mitk::Utf8Util::Local8BitToUtf8(sourcefile).c_str()));
 
     mitk::Image::Pointer image = nullptr;
 

@@ -58,7 +58,7 @@ mitk::SegTool2D::SliceInformation::SliceInformation(const mitk::Image* aSlice, c
 mitk::SegTool2D::SegTool2D(const char *type, const us::Module *interactorModule)
   : Tool(type, interactorModule), m_Contourmarkername("Position")
 {
-  Tool::m_EventConfig = "DisplayConfigMITKNoCrosshair.xml";
+  Tool::m_EventConfig = "DisplayConfigBlockLMB.xml";
 }
 
 mitk::SegTool2D::~SegTool2D()
@@ -110,7 +110,7 @@ bool mitk::SegTool2D::DetermineAffectedImageSlice(const Image *image,
   {
     affectedDimension = 1;
   }
-  // frontal
+  // coronal
   else if (imageNormal0.GetNorm() <= eps)
   {
     affectedDimension = 0;
@@ -754,4 +754,16 @@ void mitk::SegTool2D::WritePreviewOnWorkingImage(
   auto nonConstVtkSource = const_cast<vtkImageData*>(constVtkSource);
 
   ContourModelUtils::FillSliceInSlice(nonConstVtkSource, targetSlice->GetVtkImageData(), workingImage, paintingPixelValue, 1.0);
+}
+
+bool mitk::SegTool2D::IsPositionEventInsideImageRegion(mitk::InteractionPositionEvent* positionEvent,
+  const mitk::BaseData* data)
+{
+  bool isPositionEventInsideImageRegion =
+    nullptr != data && data->GetGeometry()->IsInside(positionEvent->GetPositionInWorld());
+
+  if (!isPositionEventInsideImageRegion)
+    MITK_WARN("EditableContourTool") << "PositionEvent is outside ImageRegion!";
+
+  return isPositionEventInsideImageRegion;
 }

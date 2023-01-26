@@ -323,8 +323,6 @@ function(mitk_create_module)
     if(MODULE_GCC_DEFAULT_VISIBILITY OR NOT CMAKE_COMPILER_IS_GNUCXX)
       # We only support hidden visibility for gcc for now. Clang still has troubles with
       # correctly marking template declarations and explicit template instantiations as exported.
-      # See http://comments.gmane.org/gmane.comp.compilers.clang.scm/50028
-      # and http://llvm.org/bugs/show_bug.cgi?id=10113
       set(CMAKE_CXX_VISIBILITY_PRESET default)
       set(CMAKE_VISIBILITY_INLINES_HIDDEN 0)
     else()
@@ -344,8 +342,7 @@ function(mitk_create_module)
         mitkFunctionCheckCAndCXXCompilerFlags(-Werror module_c_flags module_cxx_flags)
 
         # The flag "c++0x-static-nonintegral-init" has been renamed in newer Clang
-        # versions to "static-member-init", see
-        # http://clang-developers.42468.n3.nabble.com/Wc-0x-static-nonintegral-init-gone-td3999651.html
+        # versions to "static-member-init"
         #
         # Also, older Clang and seemingly all gcc versions do not warn if unknown
         # "-no-*" flags are used, so CMake will happily append any -Wno-* flag to the
@@ -454,6 +451,9 @@ function(mitk_create_module)
         add_executable(${MODULE_TARGET} ${_SHOW_CONSOLE_OPTION}
                        ${MODULE_CPP_FILES} ${coverage_sources} ${CPP_FILES_GENERATED} ${Q${KITNAME}_GENERATED_CPP}
                        ${DOX_FILES} ${UI_FILES} ${QRC_FILES} ${WINDOWS_ICON_RESOURCE_FILE})
+        if(WIN32 AND MITK_UTF8)
+          mitk_add_manifest(${MODULE_TARGET})
+        endif()
         set_property(TARGET ${MODULE_TARGET} PROPERTY FOLDER "${MITK_ROOT_FOLDER}/Modules/Executables")
         set(_us_module_name main)
       else()
@@ -606,10 +606,6 @@ function(mitk_create_module)
                        MODULES ${DEPENDS}
                        PACKAGES ${MODULE_PACKAGE_DEPENDS}
                       )
-    endif()
-
-    if(NOT MODULE_C_MODULE)
-      target_compile_features(${MODULE_TARGET} ${_module_property_type} ${MITK_CXX_FEATURES})
     endif()
 
     # add include directories

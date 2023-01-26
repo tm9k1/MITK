@@ -12,165 +12,145 @@ found in the LICENSE file.
 
 #include "QmitkSegmentationPreferencePage.h"
 
-#include <QLabel>
-#include <QPushButton>
-#include <QFormLayout>
-#include <QCheckBox>
-#include <QGroupBox>
-#include <QRadioButton>
-#include <QMessageBox>
-#include <QDoubleSpinBox>
+#include <mitkBaseApplication.h>
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
 
-#include <berryIPreferencesService.h>
-#include <berryPlatform.h>
+#include <QFileDialog>
+
+#include <ui_QmitkSegmentationPreferencePageControls.h>
+
+namespace
+{
+  mitk::IPreferences* GetPreferences()
+  {
+    auto* preferencesService = mitk::CoreServices::GetPreferencesService();
+    return preferencesService->GetSystemPreferences()->Node("org.mitk.views.segmentation");
+  }
+}
 
 QmitkSegmentationPreferencePage::QmitkSegmentationPreferencePage()
-  : m_MainControl(nullptr),
-    m_SlimViewCheckBox(nullptr),
-    m_RadioOutline(nullptr),
-    m_RadioOverlay(nullptr),
-    m_SmoothingCheckBox(nullptr),
-    m_SmoothingSpinBox(nullptr),
-    m_DecimationSpinBox(nullptr),
-    m_ClosingSpinBox(nullptr),
-    m_SelectionModeCheckBox(nullptr),
+  : m_Ui(new Ui::QmitkSegmentationPreferencePageControls),
+    m_Control(nullptr),
     m_Initializing(false)
 {
 }
 
 QmitkSegmentationPreferencePage::~QmitkSegmentationPreferencePage()
 {
-
 }
 
-void QmitkSegmentationPreferencePage::Init(berry::IWorkbench::Pointer )
+void QmitkSegmentationPreferencePage::Init(berry::IWorkbench::Pointer)
 {
-
 }
 
 void QmitkSegmentationPreferencePage::CreateQtControl(QWidget* parent)
 {
   m_Initializing = true;
-  berry::IPreferencesService* prefService = berry::Platform::GetPreferencesService();
 
-  m_SegmentationPreferencesNode = prefService->GetSystemPreferences()->Node("/org.mitk.views.segmentation");
+  m_Control = new QWidget(parent);
+  m_Ui->setupUi(m_Control);
 
-  m_MainControl = new QWidget(parent);
+  connect(m_Ui->labelSetPresetToolButton, SIGNAL(clicked()), this, SLOT(OnLabelSetPresetButtonClicked()));
+  connect(m_Ui->suggestionsToolButton, SIGNAL(clicked()), this, SLOT(OnSuggestionsButtonClicked()));
 
-  auto  formLayout = new QFormLayout;
-  formLayout->setHorizontalSpacing(8);
-  formLayout->setVerticalSpacing(24);
-
-  m_SlimViewCheckBox = new QCheckBox("Hide tool button texts and increase icon size", m_MainControl);
-  formLayout->addRow("Slim view", m_SlimViewCheckBox);
-
-  auto   displayOptionsLayout = new QVBoxLayout;
-  m_RadioOutline = new QRadioButton( "Draw as outline", m_MainControl);
-  displayOptionsLayout->addWidget( m_RadioOutline );
-  m_RadioOverlay = new QRadioButton( "Draw as transparent overlay", m_MainControl);
-  displayOptionsLayout->addWidget( m_RadioOverlay );
-  formLayout->addRow( "2D display", displayOptionsLayout );
-
-  auto   surfaceLayout = new QFormLayout;
-  surfaceLayout->setSpacing(8);
-
-  m_SmoothingCheckBox = new QCheckBox("Use image spacing as smoothing value hint", m_MainControl);
-  surfaceLayout->addRow(m_SmoothingCheckBox);
-  connect(m_SmoothingCheckBox, SIGNAL(stateChanged(int)), this, SLOT(OnSmoothingCheckboxChecked(int)));
-
-  m_SmoothingSpinBox = new QDoubleSpinBox(m_MainControl);
-  m_SmoothingSpinBox->setMinimum(0.0);
-  m_SmoothingSpinBox->setSingleStep(0.5);
-  m_SmoothingSpinBox->setValue(1.0);
-  m_SmoothingSpinBox->setToolTip("The Smoothing value is used as variance for a gaussian blur.");
-  surfaceLayout->addRow("Smoothing value (mm)", m_SmoothingSpinBox);
-
-  m_DecimationSpinBox = new QDoubleSpinBox(m_MainControl);
-  m_DecimationSpinBox->setMinimum(0.0);
-  m_DecimationSpinBox->setMaximum(0.99);
-  m_DecimationSpinBox->setSingleStep(0.1);
-  m_DecimationSpinBox->setValue(0.5);
-  m_DecimationSpinBox->setToolTip("Valid range is [0, 1). High values increase decimation, especially when very close to 1. A value of 0 disables decimation.");
-  surfaceLayout->addRow("Decimation rate", m_DecimationSpinBox);
-
-  m_ClosingSpinBox = new QDoubleSpinBox(m_MainControl);
-  m_ClosingSpinBox->setMinimum(0.0);
-  m_ClosingSpinBox->setMaximum(1.0);
-  m_ClosingSpinBox->setSingleStep(0.1);
-  m_ClosingSpinBox->setValue(0.0);
-  m_ClosingSpinBox->setToolTip("Valid range is [0, 1]. Higher values increase closing. A value of 0 disables closing.");
-  surfaceLayout->addRow("Closing Ratio", m_ClosingSpinBox);
-
-  m_SelectionModeCheckBox = new QCheckBox("Enable auto-selection mode", m_MainControl);
-  m_SelectionModeCheckBox->setToolTip("Automatically select a patient image and a segmentation if available");
-  formLayout->addRow("Data node selection mode",m_SelectionModeCheckBox);
-
-  formLayout->addRow("Smoothed surface creation", surfaceLayout);
-
-  m_MainControl->setLayout(formLayout);
   this->Update();
   m_Initializing = false;
 }
 
 QWidget* QmitkSegmentationPreferencePage::GetQtControl() const
 {
-  return m_MainControl;
+  return m_Control;
 }
 
 bool QmitkSegmentationPreferencePage::PerformOk()
 {
-  m_SegmentationPreferencesNode->PutBool("slim view", m_SlimViewCheckBox->isChecked());
-  m_SegmentationPreferencesNode->PutBool("draw outline", m_RadioOutline->isChecked());
-  m_SegmentationPreferencesNode->PutBool("smoothing hint", m_SmoothingCheckBox->isChecked());
-  m_SegmentationPreferencesNode->PutDouble("smoothing value", m_SmoothingSpinBox->value());
-  m_SegmentationPreferencesNode->PutDouble("decimation rate", m_DecimationSpinBox->value());
-  m_SegmentationPreferencesNode->PutDouble("closing ratio", m_ClosingSpinBox->value());
-  m_SegmentationPreferencesNode->PutBool("auto selection", m_SelectionModeCheckBox->isChecked());
+  auto* prefs = GetPreferences();
+
+  prefs->PutBool("slim view", m_Ui->slimViewCheckBox->isChecked());
+  prefs->PutBool("draw outline", m_Ui->outlineRadioButton->isChecked());
+  prefs->PutBool("selection mode", m_Ui->selectionModeCheckBox->isChecked());
+  prefs->Put("label set preset", m_Ui->labelSetPresetLineEdit->text().toStdString());
+  prefs->PutBool("default label naming", m_Ui->defaultNameRadioButton->isChecked());
+  prefs->Put("label suggestions", m_Ui->suggestionsLineEdit->text().toStdString());
+  prefs->PutBool("replace standard suggestions", m_Ui->replaceStandardSuggestionsCheckBox->isChecked());
+  prefs->PutBool("suggest once", m_Ui->suggestOnceCheckBox->isChecked());
   return true;
 }
 
 void QmitkSegmentationPreferencePage::PerformCancel()
 {
-
 }
 
 void QmitkSegmentationPreferencePage::Update()
 {
-  //m_EnableSingleEditing->setChecked(m_SegmentationPreferencesNode->GetBool("Single click property editing", true));
+  auto* prefs = GetPreferences();
 
-  m_SlimViewCheckBox->setChecked(m_SegmentationPreferencesNode->GetBool("slim view", false));
+  m_Ui->slimViewCheckBox->setChecked(prefs->GetBool("slim view", false));
 
-  if (m_SegmentationPreferencesNode->GetBool("draw outline", true) )
+  if (prefs->GetBool("draw outline", true))
   {
-    m_RadioOutline->setChecked( true );
+    m_Ui->outlineRadioButton->setChecked(true);
   }
   else
   {
-    m_RadioOverlay->setChecked( true );
+    m_Ui->overlayRadioButton->setChecked(true);
   }
 
-  if (m_SegmentationPreferencesNode->GetBool("smoothing hint", true))
+  m_Ui->selectionModeCheckBox->setChecked(prefs->GetBool("selection mode", false));
+
+  auto labelSetPreset = mitk::BaseApplication::instance().config().getString(mitk::BaseApplication::ARG_SEGMENTATION_LABELSET_PRESET.toStdString(), "");
+  bool isOverriddenByCmdLineArg = !labelSetPreset.empty();
+
+  if (!isOverriddenByCmdLineArg)
+    labelSetPreset = prefs->Get("label set preset", "");
+
+  m_Ui->labelSetPresetLineEdit->setDisabled(isOverriddenByCmdLineArg);
+  m_Ui->labelSetPresetToolButton->setDisabled(isOverriddenByCmdLineArg);
+  m_Ui->labelSetPresetCmdLineArgLabel->setVisible(isOverriddenByCmdLineArg);
+
+  m_Ui->labelSetPresetLineEdit->setText(QString::fromStdString(labelSetPreset));
+
+  if (prefs->GetBool("default label naming", true))
   {
-    m_SmoothingCheckBox->setChecked(true);
-    m_SmoothingSpinBox->setDisabled(true);
+    m_Ui->defaultNameRadioButton->setChecked(true);
   }
   else
   {
-      m_SmoothingCheckBox->setChecked(false);
-      m_SmoothingSpinBox->setEnabled(true);
+    m_Ui->askForNameRadioButton->setChecked(true);
   }
 
-  m_SelectionModeCheckBox->setChecked( m_SegmentationPreferencesNode->GetBool("auto selection", true) );
+  auto labelSuggestions = mitk::BaseApplication::instance().config().getString(mitk::BaseApplication::ARG_SEGMENTATION_LABEL_SUGGESTIONS.toStdString(), "");
+  isOverriddenByCmdLineArg = !labelSuggestions.empty();
 
-  m_SmoothingSpinBox->setValue(m_SegmentationPreferencesNode->GetDouble("smoothing value", 1.0));
-  m_DecimationSpinBox->setValue(m_SegmentationPreferencesNode->GetDouble("decimation rate", 0.5));
-  m_ClosingSpinBox->setValue(m_SegmentationPreferencesNode->GetDouble("closing ratio", 0.0));
+  if (!isOverriddenByCmdLineArg)
+    labelSuggestions = prefs->Get("label suggestions", "");
+
+  m_Ui->defaultNameRadioButton->setDisabled(isOverriddenByCmdLineArg);
+  m_Ui->askForNameRadioButton->setDisabled(isOverriddenByCmdLineArg);
+  m_Ui->suggestionsLineEdit->setDisabled(isOverriddenByCmdLineArg);
+  m_Ui->suggestionsToolButton->setDisabled(isOverriddenByCmdLineArg);
+  m_Ui->suggestionsCmdLineArgLabel->setVisible(isOverriddenByCmdLineArg);
+
+  m_Ui->suggestionsLineEdit->setText(QString::fromStdString(labelSuggestions));
+
+  m_Ui->replaceStandardSuggestionsCheckBox->setChecked(prefs->GetBool("replace standard suggestions", true));
+  m_Ui->suggestOnceCheckBox->setChecked(prefs->GetBool("suggest once", true));
 }
 
-void QmitkSegmentationPreferencePage::OnSmoothingCheckboxChecked(int state)
+void QmitkSegmentationPreferencePage::OnLabelSetPresetButtonClicked()
 {
-  if (state != Qt::Unchecked)
-    m_SmoothingSpinBox->setDisabled(true);
-  else
-    m_SmoothingSpinBox->setEnabled(true);
+  const auto filename = QFileDialog::getOpenFileName(m_Control, QStringLiteral("Load Label Set Preset"), QString(), QStringLiteral("Label set preset (*.lsetp)"));
+
+  if (!filename.isEmpty())
+    m_Ui->labelSetPresetLineEdit->setText(filename);
+}
+
+void QmitkSegmentationPreferencePage::OnSuggestionsButtonClicked()
+{
+  const auto filename = QFileDialog::getOpenFileName(m_Control, QStringLiteral("Load Label Suggestions"), QString(), QStringLiteral("Label suggestions (*.json)"));
+
+  if (!filename.isEmpty())
+    m_Ui->suggestionsLineEdit->setText(filename);
 }

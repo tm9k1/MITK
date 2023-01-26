@@ -17,14 +17,17 @@ found in the LICENSE file.
 
 namespace mitk
 {
-  NonBlockingAlgorithm::NonBlockingAlgorithm() : m_ThreadID(-1), m_UpdateRequests(0), m_KillRequest(false)
+  NonBlockingAlgorithm::NonBlockingAlgorithm() : m_UpdateRequests(0), m_KillRequest(false)
   {
-    m_ParameterListMutex = itk::FastMutexLock::New();
     m_Parameters = PropertyList::New();
-    m_MultiThreader = itk::MultiThreader::New();
   }
 
-  NonBlockingAlgorithm::~NonBlockingAlgorithm() {}
+  NonBlockingAlgorithm::~NonBlockingAlgorithm()
+  {
+    if (m_Thread.joinable())
+      m_Thread.detach();
+  }
+
   void mitk::NonBlockingAlgorithm::SetDataStorage(DataStorage &storage) { m_DataStorage = &storage; }
   DataStorage *mitk::NonBlockingAlgorithm::GetDataStorage() { return m_DataStorage.Lock(); }
   void NonBlockingAlgorithm::Initialize(const NonBlockingAlgorithm *itkNotUsed(other))
@@ -42,9 +45,9 @@ namespace mitk
 
   void NonBlockingAlgorithm::SetPointerParameter(const char *parameter, BaseData *value)
   {
-    m_ParameterListMutex->Lock();
+    m_ParameterListMutex.lock();
     m_Parameters->SetProperty(parameter, SmartPointerProperty::New(value));
-    m_ParameterListMutex->Unlock();
+    m_ParameterListMutex.unlock();
   }
 
   void NonBlockingAlgorithm::DefineTriggerParameter(const char *parameter)
@@ -90,73 +93,52 @@ namespace mitk
     if (m_KillRequest)
       return; // someone wants us to die
 
-    m_ParameterListMutex->Lock();
-    m_ThreadParameters.m_Algorithm = this;
+    m_ParameterListMutex.lock();
     ++m_UpdateRequests;
-    m_ParameterListMutex->Unlock();
-    if (m_ThreadID != -1) // thread already running. But something obviously wants us to recalculate the output
+    m_ParameterListMutex.unlock();
+    if (m_Thread.joinable()) // thread already running. But something obviously wants us to recalculate the output
     {
       return; // thread already running
     }
 
     // spawn a thread that calls ThreadedUpdateFunction(), and ThreadedUpdateFinished() on us
-    itk::ThreadFunctionType fpointer = &StaticNonBlockingAlgorithmThread;
-    m_ThreadID = m_MultiThreader->SpawnThread(fpointer, &m_ThreadParameters);
+    this->Register();
+    m_Thread = std::thread(StaticNonBlockingAlgorithmThread, this);
   }
 
   void NonBlockingAlgorithm::StopAlgorithm()
   {
-    if (m_ThreadID == -1)
-      return; // thread not running
-
-    m_MultiThreader->TerminateThread(m_ThreadID); // waits for the thread to terminate on its own
+    if (m_Thread.joinable())
+      m_Thread.join(); // waits for the thread to terminate on its own
   }
 
-  // a static function to call a member of NonBlockingAlgorithm from inside an ITK thread
-  ITK_THREAD_RETURN_TYPE NonBlockingAlgorithm::StaticNonBlockingAlgorithmThread(void *param)
+  // a static function to call a member of NonBlockingAlgorithm from inside a thread
+  void NonBlockingAlgorithm::StaticNonBlockingAlgorithmThread(NonBlockingAlgorithm* algorithm)
   {
-    // itk::MultiThreader provides an itk::MultiThreader::ThreadInfoStruct as parameter
-    auto *itkmttis = static_cast<itk::MultiThreader::ThreadInfoStruct *>(param);
-
-    // we need the UserData part of that structure
-    auto *flsp = static_cast<ThreadParameters *>(itkmttis->UserData);
-
-    NonBlockingAlgorithm::Pointer algorithm = flsp->m_Algorithm;
-    // this UserData tells us, which BubbleTool's method to call
-    if (!algorithm)
-    {
-      return ITK_THREAD_RETURN_VALUE;
-    }
-
-    algorithm->m_ParameterListMutex->Lock();
+    algorithm->m_ParameterListMutex.lock();
     while (algorithm->m_UpdateRequests > 0)
     {
       algorithm->m_UpdateRequests = 0;
-      algorithm->m_ParameterListMutex->Unlock();
+      algorithm->m_ParameterListMutex.unlock();
 
       // actually call the methods that do the work
       if (algorithm->ThreadedUpdateFunction()) // returns a bool for success/failure
       {
-        itk::ReceptorMemberCommand<NonBlockingAlgorithm>::Pointer command =
-          itk::ReceptorMemberCommand<NonBlockingAlgorithm>::New();
+        auto command = itk::ReceptorMemberCommand<NonBlockingAlgorithm>::New();
         command->SetCallbackFunction(algorithm, &NonBlockingAlgorithm::ThreadedUpdateSuccessful);
         CallbackFromGUIThread::GetInstance()->CallThisFromGUIThread(command);
-        // algorithm->ThreadedUpdateSuccessful();
+
       }
       else
       {
-        itk::ReceptorMemberCommand<NonBlockingAlgorithm>::Pointer command =
-          itk::ReceptorMemberCommand<NonBlockingAlgorithm>::New();
+        auto command = itk::ReceptorMemberCommand<NonBlockingAlgorithm>::New();
         command->SetCallbackFunction(algorithm, &NonBlockingAlgorithm::ThreadedUpdateFailed);
         CallbackFromGUIThread::GetInstance()->CallThisFromGUIThread(command);
-        // algorithm->ThreadedUpdateFailed();
       }
 
-      algorithm->m_ParameterListMutex->Lock();
+      algorithm->m_ParameterListMutex.lock();
     }
-    algorithm->m_ParameterListMutex->Unlock();
-
-    return ITK_THREAD_RETURN_VALUE;
+    algorithm->m_ParameterListMutex.unlock();
   }
 
   void NonBlockingAlgorithm::TriggerParameterModified(const itk::EventObject &) { StartAlgorithm(); }
@@ -170,34 +152,26 @@ namespace mitk
   void NonBlockingAlgorithm::ThreadedUpdateSuccessful(const itk::EventObject &)
   {
     ThreadedUpdateSuccessful();
-
-    m_ParameterListMutex->Lock();
-    m_ThreadID = -1; // tested before starting
-    m_ParameterListMutex->Unlock();
-    m_ThreadParameters.m_Algorithm = nullptr;
   }
 
   void NonBlockingAlgorithm::ThreadedUpdateSuccessful()
   {
     // notify observers that a result is ready
     InvokeEvent(ResultAvailable(this));
+    this->UnRegister();
   }
 
   // called from gui thread
   void NonBlockingAlgorithm::ThreadedUpdateFailed(const itk::EventObject &)
   {
     ThreadedUpdateFailed();
-
-    m_ParameterListMutex->Lock();
-    m_ThreadID = -1; // tested before starting
-    m_ParameterListMutex->Unlock();
-    m_ThreadParameters.m_Algorithm = nullptr; // delete
   }
 
   void NonBlockingAlgorithm::ThreadedUpdateFailed()
   {
     // notify observers that something went wrong
     InvokeEvent(ProcessingError(this));
+    this->UnRegister();
   }
 
 } // namespace

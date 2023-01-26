@@ -5,7 +5,6 @@ set(MITK_CONFIG_PACKAGES ${MITK_CONFIG_PACKAGES}
 )
 
 set(MITK_CONFIG_PLUGINS ${MITK_CONFIG_PLUGINS}
-  org.mitk.gui.qt.multilabelsegmentation
   org.mitk.matchpoint.core.helper
   org.mitk.gui.qt.matchpoint.algorithm.browser
   org.mitk.gui.qt.matchpoint.algorithm.control
@@ -18,6 +17,7 @@ set(MITK_CONFIG_PLUGINS ${MITK_CONFIG_PLUGINS}
 
 if(NOT MITK_USE_SUPERBUILD)
   set(BUILD_CoreCmdApps ON CACHE BOOL "" FORCE)
+  set(BUILD_MatchPointCmdApps ON CACHE BOOL "" FORCE)
 endif()
 
 set(MITK_VTK_DEBUG_LEAKS OFF CACHE BOOL "Enable VTK Debug Leaks" FORCE)

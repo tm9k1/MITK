@@ -99,7 +99,7 @@ namespace mitk
      *
      * The actual OBJECT holding the value of the property is replaced by this function.
      * This is useful if you want to change the type of the property, like from BoolProperty to StringProperty.
-     * Another use is to share one and the same property object among several ProperyList/DataNode objects, which
+     * Another use is to share one and the same property object among several PropertyList/DataNode objects, which
      * makes them appear synchronized.
      */
     void ReplaceProperty(const std::string &propertyKey, BaseProperty *property);
@@ -223,7 +223,7 @@ namespace mitk
      * @brief Get the timestamp of the last change of the map or the last change of one of
      * the properties store in the list (whichever is later).
      */
-    unsigned long GetMTime() const override;
+    itk::ModifiedTimeType GetMTime() const override;
 
     /**
      * @brief Remove a property from the list/map.

@@ -31,6 +31,7 @@ found in the LICENSE file.
 #include <mitkNodePredicateProperty.h>
 #include <mitkProperties.h>
 #include <mitkRenderingModeProperty.h>
+#include <mitkIPreferences.h>
 
 // qt widgets module
 #include <QmitkCustomVariants.h>
@@ -39,25 +40,12 @@ found in the LICENSE file.
 #include <QmitkIOUtil.h>
 #include <QmitkNodeDescriptorManager.h>
 
-// beery plugins
-#include <berryAbstractUICTKPlugin.h>
-#include <berryIContributor.h>
-#include <berryIEditorPart.h>
-#include <berryIEditorRegistry.h>
-#include <berryIExtensionRegistry.h>
-#include <berryIPreferencesService.h>
-#include <berryIWorkbenchPage.h>
-#include <berryPlatform.h>
-#include <berryPlatformUI.h>
-
 // mitk core services plugin
 #include <mitkIDataStorageReference.h>
 #include <mitkIDataStorageService.h>
 
 // mitk gui common plugin
 #include <mitkDataNodeObject.h>
-#include <mitkDataStorageEditorInput.h>
-#include <mitkIRenderingManager.h>
 
 // mitk gui qt application plugin
 #include <QmitkDataNodeGlobalReinitAction.h>
@@ -69,9 +57,7 @@ found in the LICENSE file.
 // qt
 #include <QGridLayout>
 #include <QVBoxLayout>
-#include <QAction>
 #include <QTreeView>
-#include <QSignalMapper>
 
 const QString QmitkDataManagerView::VIEW_ID = "org.mitk.views.datamanager";
 
@@ -90,14 +76,13 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   m_CurrentRowCount = 0;
   m_Parent = parent;
 
-  berry::IBerryPreferences::Pointer prefs = this->GetPreferences().Cast<berry::IBerryPreferences>();
-  assert(prefs);
+  auto* prefs = this->GetPreferences();
+  assert(prefs != nullptr);
 
-  //# GUI
   m_NodeTreeModel = new QmitkDataStorageTreeModel(GetDataStorage(), prefs->GetBool("Place new nodes on top", true));
   m_NodeTreeModel->setParent(parent);
   m_NodeTreeModel->SetAllowHierarchyChange(prefs->GetBool("Allow changing of parent node", false));
-  m_SurfaceDecimation = prefs->GetBool("Use surface decimation", false);
+
   // Prepare filters
   m_HelperObjectFilterPredicate = mitk::NodePredicateOr::New(
     mitk::NodePredicateProperty::New("helper object", mitk::BoolProperty::New(true)),
@@ -133,23 +118,7 @@ void QmitkDataManagerView::CreateQtPartControl(QWidget* parent)
   // data node context menu and menu actions
   m_DataNodeContextMenu = new QmitkDataNodeContextMenu(GetSite(), m_NodeTreeView);
   m_DataNodeContextMenu->SetDataStorage(GetDataStorage());
-  m_DataNodeContextMenu->SetSurfaceDecimation(m_SurfaceDecimation);
   connect(m_NodeTreeView, SIGNAL(customContextMenuRequested(const QPoint&)), m_DataNodeContextMenu, SLOT(OnContextMenuRequested(const QPoint&)));
-
-  berry::IEditorRegistry* editorRegistry = berry::PlatformUI::GetWorkbench()->GetEditorRegistry();
-  QList<berry::IEditorDescriptor::Pointer> editors = editorRegistry->GetEditors("*.mitk");
-  if (editors.size() > 1)
-  {
-    m_ShowInMapper = new QSignalMapper(this);
-    foreach(berry::IEditorDescriptor::Pointer descriptor, editors)
-    {
-      QAction* action = new QAction(descriptor->GetLabel(), this);
-      m_ShowInActions << action;
-      m_ShowInMapper->connect(action, SIGNAL(triggered()), m_ShowInMapper, SLOT(map()));
-      m_ShowInMapper->setMapping(action, descriptor->GetId());
-    }
-    connect(m_ShowInMapper, SIGNAL(mapped(QString)), this, SLOT(ShowIn(QString)));
-  }
 
   QGridLayout* dndFrameWidgetLayout = new QGridLayout;
   dndFrameWidgetLayout->addWidget(m_NodeTreeView, 0, 0);
@@ -210,13 +179,6 @@ void QmitkDataManagerView::OnNodeVisibilityChanged()
   ToggleVisibilityAction::Run(GetSite(), GetDataStorage(), QList<mitk::DataNode::Pointer>());
 }
 
-void QmitkDataManagerView::ShowIn(const QString& editorId)
-{
-  berry::IWorkbenchPage::Pointer page = GetSite()->GetPage();
-  berry::IEditorInput::Pointer input(new mitk::DataStorageEditorInput(GetDataStorageReference()));
-  page->OpenEditor(input, editorId, false, berry::IWorkbenchPage::MATCH_ID);
-}
-
 void QmitkDataManagerView::NodeChanged(const mitk::DataNode* /*node*/)
 {
   // m_FilterModel->invalidate();
@@ -224,7 +186,7 @@ void QmitkDataManagerView::NodeChanged(const mitk::DataNode* /*node*/)
   QMetaObject::invokeMethod(m_FilterModel, "invalidate", Qt::QueuedConnection);
 }
 
-void QmitkDataManagerView::OnPreferencesChanged(const berry::IBerryPreferences* prefs)
+void QmitkDataManagerView::OnPreferencesChanged(const mitk::IPreferences* prefs)
 {
   if (m_NodeTreeModel->GetPlaceNewNodesOnTopFlag() != prefs->GetBool("Place new nodes on top", true))
   {
@@ -257,9 +219,6 @@ void QmitkDataManagerView::OnPreferencesChanged(const berry::IBerryPreferences* 
     }
   }
   m_NodeTreeView->expandAll();
-
-  m_SurfaceDecimation = prefs->GetBool("Use surface decimation", false);
-  m_DataNodeContextMenu->SetSurfaceDecimation(m_SurfaceDecimation);
 
   m_NodeTreeModel->SetAllowHierarchyChange(prefs->GetBool("Allow changing of parent node", false));
 

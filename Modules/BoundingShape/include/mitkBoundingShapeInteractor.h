@@ -25,7 +25,7 @@ namespace mitk
 {
 // create events for interactions
 #pragma GCC visibility push(default)
-  itkEventMacro(BoundingShapeInteractionEvent, itk::AnyEvent);
+  itkEventMacroDeclaration(BoundingShapeInteractionEvent, itk::AnyEvent);
 #pragma GCC visibility pop
 
   /**
@@ -122,12 +122,12 @@ namespace mitk
     /**
     * @brief Enables default crosshair properties
     */
-    void EnableCrosshairNavigation();
+    void EnableOriginalInteraction();
 
     /**
     * @brief Sets limited crosshair properties (disable crosshair movement)
     */
-    void DisableCrosshairNavigation();
+    void DisableOriginalInteraction();
 
     class Impl;
     Impl *m_Impl;

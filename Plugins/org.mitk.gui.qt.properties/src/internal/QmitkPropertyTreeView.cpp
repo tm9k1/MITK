@@ -15,7 +15,6 @@ found in the LICENSE file.
 #include "QmitkPropertyItemModel.h"
 #include "QmitkPropertyItemSortFilterProxyModel.h"
 #include "QmitkPropertyTreeView.h"
-#include <berryIBerryPreferences.h>
 #include <berryQtStyleManager.h>
 #include <mitkIPropertyAliases.h>
 #include <mitkIPropertyDescriptions.h>
@@ -23,6 +22,32 @@ found in the LICENSE file.
 #include <QmitkRenderWindow.h>
 #include <QPainter>
 #include <memory>
+
+namespace
+{
+  QmitkAbstractNodeSelectionWidget::NodeList GetInitialSelection(berry::ISelection::ConstPointer selection)
+  {
+    if (selection.IsNotNull() && !selection->IsEmpty())
+    {
+      auto* dataNodeSelection = dynamic_cast<const mitk::DataNodeSelection*>(selection.GetPointer());
+
+      if (nullptr != dataNodeSelection)
+      {
+        auto firstSelectedDataNode = dataNodeSelection->GetSelectedDataNodes().front();
+
+        if (firstSelectedDataNode.IsNotNull())
+        {
+          QmitkAbstractNodeSelectionWidget::NodeList initialSelection;
+          initialSelection.push_back(firstSelectedDataNode);
+
+          return initialSelection;
+        }
+      }
+    }
+
+    return QmitkAbstractNodeSelectionWidget::NodeList();
+  }
+}
 
 const std::string QmitkPropertyTreeView::VIEW_ID = "org.mitk.views.properties";
 
@@ -104,7 +129,6 @@ void QmitkPropertyTreeView::CreateQtPartControl(QWidget* parent)
 
   m_Controls.singleSlot->SetDataStorage(GetDataStorage());
   m_Controls.singleSlot->SetSelectionIsOptional(true);
-  m_Controls.singleSlot->SetAutoSelectNewNodes(true);
   m_Controls.singleSlot->SetEmptyInfo(QString("Please select a data node"));
   m_Controls.singleSlot->SetPopUpTitel(QString("Select data node"));
 
@@ -144,6 +168,12 @@ void QmitkPropertyTreeView::CreateQtPartControl(QWidget* parent)
     this, &QmitkPropertyTreeView::OnCurrentRowChanged);
   connect(m_Model, &QmitkPropertyItemModel::modelReset,
     this, &QmitkPropertyTreeView::OnModelReset);
+
+  auto selection = this->GetSite()->GetWorkbenchWindow()->GetSelectionService()->GetSelection();
+  auto currentSelection = GetInitialSelection(selection);
+
+  if (!currentSelection.isEmpty())
+    m_Controls.singleSlot->SetCurrentSelection(currentSelection);
 }
 
 void QmitkPropertyTreeView::SetAsSelectionListener(bool checked)
@@ -222,11 +252,7 @@ void QmitkPropertyTreeView::OnCurrentSelectionChanged(QList<mitk::DataNode::Poin
   m_Delegate->SetPropertyList(propertyList);
 
   m_Controls.newButton->setEnabled(true);
-
-  if (!m_ProxyModel->filterRegExp().isEmpty())
-  {
-    m_Controls.treeView->expandAll();
-  }
+  m_Controls.treeView->expandAll();
 }
 
 void QmitkPropertyTreeView::HideAllIcons()
@@ -357,15 +383,12 @@ void QmitkPropertyTreeView::OnAddNewProperty()
 void QmitkPropertyTreeView::OnFilterTextChanged(const QString& filter)
 {
   m_ProxyModel->setFilterWildcard(filter);
-
-  if (filter.isEmpty())
-    m_Controls.treeView->collapseAll();
-  else
-    m_Controls.treeView->expandAll();
+  m_Controls.treeView->expandAll();
 }
 
 void QmitkPropertyTreeView::OnModelReset()
 {
+  m_Controls.treeView->expandAll();
   m_Controls.descriptionLabel->hide();
   this->HideAllIcons();
 }

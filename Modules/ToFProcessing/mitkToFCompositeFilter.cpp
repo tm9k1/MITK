@@ -16,7 +16,7 @@ found in the LICENSE file.
 
 #include <itkImage.h>
 
-#include "opencv2/imgproc.hpp"
+#include <opencv2/imgproc/imgproc_c.h>
 
 mitk::ToFCompositeFilter::ToFCompositeFilter() : m_SegmentationMask(nullptr), m_ImageWidth(0), m_ImageHeight(0), m_ImageSize(0),
 m_IplDistanceImage(nullptr), m_IplOutputImage(nullptr), m_ItkInputImage(nullptr), m_ApplyTemporalMedianFilter(false), m_ApplyAverageFilter(false),
@@ -313,7 +313,7 @@ void mitk::ToFCompositeFilter::ProcessStreamedQuickSelectMedianImageFilter(IplIm
   delete[] tmpArray;
 }
 
-#define ELEM_SWAP(a,b) { register float t=(a);(a)=(b);(b)=t; }
+#define ELEM_SWAP(a,b) { float t=(a);(a)=(b);(b)=t; }
 float mitk::ToFCompositeFilter::quick_select(float arr[], int n)
 {
   int low = 0;

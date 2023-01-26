@@ -11,44 +11,23 @@ found in the LICENSE file.
 ============================================================================*/
 
 #include "QmitkMitkWorkbenchIntroPart.h"
+#include "QmitkMitkWorkbenchIntroPlugin.h"
 
-#include <berryIWorkbenchWindow.h>
+#include <berryIPerspectiveDescriptor.h>
 #include <berryIWorkbench.h>
 #include <berryIWorkbenchPage.h>
-#include <berryIPerspectiveRegistry.h>
+#include <berryIWorkbenchWindow.h>
 #include <berryWorkbenchPreferenceConstants.h>
-#include <berryIPreferences.h>
-#include <berryIPreferencesService.h>
-#include <berryPlatform.h>
 
-#include <berryIEditorReference.h>
-#include <berryIEditorInput.h>
-
-#include <ctkPluginContext.h>
-
-#include <mitkIDataStorageService.h>
 #include <mitkDataStorageEditorInput.h>
+#include <mitkIDataStorageService.h>
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
 
-#include <mitkLogMacros.h>
-
-#include <QLabel>
-#include <QMessageBox>
-#include <QtCore/qconfig.h>
-
-#include <QString>
-#include <QStringList>
-#include <QRegExp>
-#include <QChar>
-#include <QByteArray>
 #include <QDesktopServices>
-
-#include "QmitkMitkWorkbenchIntroPlugin.h"
-#include "mitkDataStorageEditorInput.h"
-#include <string>
-
-#include <QWebEngineView>
 #include <QWebEnginePage>
-#include <QUrlQuery>
+#include <QWebEngineView>
 
 class QmitkMitkWorkbenchIntroPart::Impl
 {
@@ -131,7 +110,7 @@ namespace
         }
       }
     }
-    else if (scheme.contains("http"))
+    else if (scheme.contains("https"))
     {
       QDesktopServices::openUrl(url);
     }
@@ -148,7 +127,7 @@ QmitkMitkWorkbenchIntroPart::QmitkMitkWorkbenchIntroPart()
   : m_Controls(nullptr),
     m_Impl(new Impl)
 {
-  berry::IPreferences::Pointer workbenchPrefs = QmitkMitkWorkbenchIntroPlugin::GetDefault()->GetPreferencesService()->GetSystemPreferences();
+  auto* workbenchPrefs = mitk::CoreServices::GetPreferencesService()->GetSystemPreferences();
   workbenchPrefs->PutBool(berry::WorkbenchPreferenceConstants::SHOW_INTRO, true);
   workbenchPrefs->Flush();
 }
@@ -156,18 +135,11 @@ QmitkMitkWorkbenchIntroPart::QmitkMitkWorkbenchIntroPart()
 QmitkMitkWorkbenchIntroPart::~QmitkMitkWorkbenchIntroPart()
 {
   // if the workbench is not closing (that means, welcome screen was closed explicitly), set "Show_intro" false
-  if (!this->GetIntroSite()->GetPage()->GetWorkbenchWindow()->GetWorkbench()->IsClosing())
-  {
-    berry::IPreferences::Pointer workbenchPrefs = QmitkMitkWorkbenchIntroPlugin::GetDefault()->GetPreferencesService()->GetSystemPreferences();
-    workbenchPrefs->PutBool(berry::WorkbenchPreferenceConstants::SHOW_INTRO, false);
-    workbenchPrefs->Flush();
-  }
-  else
-  {
-    berry::IPreferences::Pointer workbenchPrefs = QmitkMitkWorkbenchIntroPlugin::GetDefault()->GetPreferencesService()->GetSystemPreferences();
-    workbenchPrefs->PutBool(berry::WorkbenchPreferenceConstants::SHOW_INTRO, true);
-    workbenchPrefs->Flush();
-  }
+  bool showIntro = this->GetIntroSite()->GetPage()->GetWorkbenchWindow()->GetWorkbench()->IsClosing();
+
+  auto* workbenchPrefs = mitk::CoreServices::GetPreferencesService()->GetSystemPreferences();
+  workbenchPrefs->PutBool(berry::WorkbenchPreferenceConstants::SHOW_INTRO, showIntro);
+  workbenchPrefs->Flush();
 
   // if workbench is not closing (Just welcome screen closing), open last used perspective
   if (this->GetIntroSite()->GetPage()->GetPerspective()->GetId()
@@ -194,21 +166,22 @@ void QmitkMitkWorkbenchIntroPart::CreateQtPartControl(QWidget* parent)
     // create a QWebView as well as a QWebPage and QWebFrame within the QWebview
     m_Impl->View = new QWebEngineView(parent);
 
+    this->CreateConnections();
+
     auto page = new QmitkWebEnginePage(this, parent);
     m_Impl->View->setPage(page);
 
-    QUrl urlQtResource(QString("qrc:/org.mitk.gui.qt.welcomescreen/mitkworkbenchwelcomeview.html"),  QUrl::TolerantMode );
+    QUrl urlQtResource(QString("qrc:/org.mitk.gui.qt.welcomescreen/index.html"),  QUrl::TolerantMode);
     m_Impl->View->load( urlQtResource );
 
     // adds the webview as a widget
     parent->layout()->addWidget(m_Impl->View);
-
-    this->CreateConnections();
   }
 }
 
 void QmitkMitkWorkbenchIntroPart::CreateConnections()
 {
+  connect(m_Impl->View, &QWebEngineView::loadFinished, this, &QmitkMitkWorkbenchIntroPart::OnLoadFinished);
 }
 
 void QmitkMitkWorkbenchIntroPart::StandbyStateChanged(bool /*standby*/)
@@ -217,4 +190,28 @@ void QmitkMitkWorkbenchIntroPart::StandbyStateChanged(bool /*standby*/)
 
 void QmitkMitkWorkbenchIntroPart::SetFocus()
 {
+}
+
+void QmitkMitkWorkbenchIntroPart::ReloadPage()
+{
+  if (m_Impl->View != nullptr)
+    m_Impl->View->reload();
+}
+
+void QmitkMitkWorkbenchIntroPart::OnLoadFinished(bool ok)
+{
+  if (!ok)
+    return;
+
+  auto* prefs = mitk::CoreServices::GetPreferencesService()->GetSystemPreferences()->Node("/org.mitk.qt.extapplicationintro");
+  bool showTips = prefs->GetBool("show tips", true);
+
+  if (showTips)
+  {
+    m_Impl->View->page()->runJavaScript("showRandomTip(); showTips()");
+  }
+  else
+  {
+    m_Impl->View->page()->runJavaScript("hideTips()");
+  }
 }

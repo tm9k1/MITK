@@ -90,7 +90,7 @@ namespace mitk
     void SetLevelWindow(ScalarType level, ScalarType window, bool expandRangesIfNecessary = true);
 
     /*!
-    * Set the lower and upper bound of the window
+    * Set the lower and upper bound of the window, restricted to the range from -10^300 to 10^300. Higher/lower values are clamped to these boundaries.
     */
     void SetWindowBounds(ScalarType lowerBound, ScalarType upperBound, bool expandRangesIfNecessary = true);
 
@@ -140,7 +140,7 @@ namespace mitk
     void SetDefaultLevelWindow(ScalarType level, ScalarType window);
 
     /*!
-    * set the default Bounderies
+    * set the default Boundaries
     */
     void SetDefaultBoundaries(ScalarType low, ScalarType up);
 

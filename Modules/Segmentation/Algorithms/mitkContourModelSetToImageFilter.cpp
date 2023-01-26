@@ -166,27 +166,27 @@ void mitk::ContourModelSetToImageFilter::GenerateData()
     vec.Normalize();
     outputImageGeo->WorldToIndex(point3D, point3D);
 
-    mitk::PlaneGeometry::PlaneOrientation orientation;
+    mitk::AnatomicalPlane orientation;
     if (mitk::Equal(vec[0], 0))
     {
-      orientation = mitk::PlaneGeometry::Sagittal;
+      orientation = mitk::AnatomicalPlane::Sagittal;
       sliceIndex = point3D[0];
     }
     else if (mitk::Equal(vec[1], 0))
     {
-      orientation = mitk::PlaneGeometry::Frontal;
+      orientation = mitk::AnatomicalPlane::Coronal;
       sliceIndex = point3D[1];
     }
     else if (mitk::Equal(vec[2], 0))
     {
-      orientation = mitk::PlaneGeometry::Axial;
+      orientation = mitk::AnatomicalPlane::Axial;
       sliceIndex = point3D[2];
     }
     else
     {
       // TODO Maybe rotate geometry to extract slice?
       MITK_ERROR
-        << "Cannot detect correct slice number! Only axial, sagittal and frontal oriented contours are supported!";
+        << "Cannot detect correct slice number! Only axial, sagittal and coronal oriented contours are supported!";
       return;
     }
 
@@ -211,7 +211,7 @@ void mitk::ContourModelSetToImageFilter::GenerateData()
 
     // 3. Fill contour into slice
     mitk::ContourModel::Pointer projectedContour =
-      mitk::ContourModelUtils::ProjectContourTo2DSlice(slice, contour, true, false);
+      mitk::ContourModelUtils::ProjectContourTo2DSlice(slice, contour);
     mitk::ContourModelUtils::FillContourInSlice(projectedContour, slice, outputImage);
 
     // 4. Write slice back into image volume

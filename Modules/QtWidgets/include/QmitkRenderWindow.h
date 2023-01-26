@@ -24,6 +24,8 @@ found in the LICENSE file.
 #include "mitkBaseRenderer.h"
 #include "mitkInteractionEventConst.h"
 
+#include <QmitkSimpleTextOverlayWidget.h>
+
 class QDragEnterEvent;
 class QDropEvent;
 class QInputEvent;
@@ -79,6 +81,9 @@ public:
   void ActivateMenuWidget(bool state);
 
   bool GetActivateMenuWidgetFlag() { return m_MenuWidgetActivated; }
+
+  void ShowOverlayMessage(bool show);
+
   // Get it from the QVTKWidget parent
   vtkRenderWindow *GetVtkRenderWindow() override { return this->renderWindow(); }
 
@@ -123,8 +128,6 @@ Q_SIGNALS:
   /// \brief Emits a signal to say that this window has had the following nodes dropped on it.
   void NodesDropped(QmitkRenderWindow *thisWindow, std::vector<mitk::DataNode *> nodes);
 
-  void mouseEvent(QMouseEvent *);
-
 private Q_SLOTS:
 
   void DeferredHideMenu();
@@ -141,6 +144,8 @@ private:
   std::string GetKeyLetter(QKeyEvent *ke) const;
   int GetDelta(QWheelEvent *we) const;
 
+  void UpdateStatusBar(mitk::Point2D pointerPositionOnScreen);
+
   bool m_ResendQtEvents;
 
   QmitkRenderWindowMenu *m_MenuWidget;
@@ -150,6 +155,8 @@ private:
   QmitkRenderWindowMenu::LayoutIndex m_LayoutIndex;
 
   vtkSmartPointer<vtkGenericOpenGLRenderWindow> m_InternalRenderWindow;
+
+  QmitkSimpleTextOverlayWidget* m_GeometryViolationWarningOverlay;
 
 };
 

@@ -17,6 +17,16 @@ found in the LICENSE file.
 #include <iomanip>
 #include <mitkNumericTypes.h>
 
+namespace mitk
+{
+  itkEventMacroDefinition(PointSetEvent, itk::AnyEvent);
+  itkEventMacroDefinition(PointSetMoveEvent, PointSetEvent);
+  itkEventMacroDefinition(PointSetSizeChangeEvent, PointSetEvent);
+  itkEventMacroDefinition(PointSetAddEvent, PointSetSizeChangeEvent);
+  itkEventMacroDefinition(PointSetRemoveEvent, PointSetSizeChangeEvent);
+  itkEventMacroDefinition(PointSetExtendTimeRangeEvent, PointSetEvent);
+}
+
 mitk::PointSet::PointSet() : m_CalculateBoundingBox(true)
 {
   this->InitializeEmpty();
@@ -194,7 +204,7 @@ int mitk::PointSet::SearchPoint(Point3D point, ScalarType distance, int t) const
 
   this->GetGeometry(t)->WorldToIndex(point, indexPoint);
 
-  // Searching the first point in the Set, that is +- distance far away fro
+  // Searching the first point in the Set, that is +- distance far away from
   // the given point
   unsigned int i;
   PointsContainer::Iterator it, end;
@@ -415,7 +425,7 @@ mitk::PointSet::PointsIterator mitk::PointSet::RemovePointAtEnd(int t)
       points->DeleteIndex(id);
       pdata->DeleteIndex(id);
       PointsIterator eit2 = points->End();
-      return --eit2;
+      return points->empty()? eit2 : --eit2;
     }
     else
     {

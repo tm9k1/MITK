@@ -23,9 +23,9 @@ This file is based heavily on a corresponding ITK filter.
 #include "itkImageToPathFilter.h"
 #include "itkNumericTraits.h"
 #include "itkPolyLineParametricPath.h"
-#include "vcl_deque.h"
-#include "vcl_list.h"
-#include <itksys/hash_map.hxx>
+#include <deque>
+#include <list>
+#include <unordered_map>
 
 namespace itk
 {
@@ -44,8 +44,7 @@ namespace itk
    * The marching squares algorithm is a special case of the marching cubes
    * algorithm (Lorensen, William and Harvey E. Cline. Marching Cubes: A High
    * Resolution 3D Surface Construction Algorithm. Computer Graphics (SIGGRAPH 87
-   * Proceedings) 21(4) July 1987, p. 163-170). A simple explanation is available
-   * here: http://www.essi.fr/~lingrand/MarchingCubes/algo.html
+   * Proceedings) 21(4) July 1987, p. 163-170).
    *
    * There is a single ambiguous case in the marching squares algorithm: if a
    * given 2x2-pixel square has two high-valued and two low-valued pixels, each
@@ -82,7 +81,6 @@ namespace itk
    * must be set at the filter level.
    *
    * This class was contributed to the Insight Journal by Zachary Pincus.
-   *       http://insight-journal.org/midas/handle.php?handle=1926/165
    *
    * \sa Image
    * \sa Path
@@ -204,7 +202,7 @@ namespace itk
     // pixel traversed = first pixel in contour) would be possible by either
     // changing the merging rules, which would make the contouring operation
     // slower, or by storing additional data as to which pixel was first.
-    class ContourType : public vcl_deque<VertexType>
+    class ContourType : public std::deque<VertexType>
     {
     public:
       unsigned int m_ContourNumber;
@@ -213,7 +211,7 @@ namespace itk
     // Store all the growing contours in a list. We may need to delete contours
     // from anywhere in the sequence (when we merge them together), so we need to
     // use a list instead of a vector or similar.
-    typedef vcl_list<ContourType> ContourContainer;
+    typedef std::list<ContourType> ContourContainer;
     typedef typename ContourContainer::iterator ContourRef;
 
     // declare the hash function we are using for the hash_map.
@@ -232,8 +230,7 @@ namespace itk
         return hashValue;
       }
 
-      // Define hash function for floats. Based on method from
-      // http://www.brpreiss.com/books/opus4/html/page217.html
+      // Define hash function for floats.
       inline size_t float_hash(const CoordinateType &k) const
       {
         if (k == 0)
@@ -241,8 +238,8 @@ namespace itk
           return 0;
         }
         int exponent;
-        CoordinateType mantissa = vcl_frexp(k, &exponent);
-        size_t value = static_cast<size_t>(vcl_fabs(mantissa));
+        CoordinateType mantissa = std::frexp(k, &exponent);
+        size_t value = static_cast<size_t>(std::fabs(mantissa));
         value = (2 * value - 1) * ~0U;
         return value;
       }
@@ -260,7 +257,7 @@ namespace itk
     // from our list when they have been merged into another. Thus, we store
     // an iterator pointing to the contour in the list.
 
-    typedef itksys::hash_map<VertexType, ContourRef, VertexHash> VertexToContourMap;
+    typedef std::unordered_map<VertexType, ContourRef, VertexHash> VertexToContourMap;
     typedef typename VertexToContourMap::iterator VertexMapIterator;
     typedef typename VertexToContourMap::value_type VertexContourRefPair;
 

@@ -14,13 +14,13 @@ found in the LICENSE file.
 #define MITKDATASTORAGE_H
 
 #include "itkObject.h"
-#include "itkSimpleFastMutexLock.h"
 #include "itkVectorContainer.h"
 #include "mitkDataNode.h"
 #include "mitkGeometry3D.h"
 #include "mitkMessage.h"
 #include <MitkCoreExports.h>
 #include <map>
+#include <mutex>
 
 namespace mitk
 {
@@ -194,7 +194,7 @@ namespace mitk
     const DataNode::GroupTagList GetGroupTags() const;
 
     /*ITK Mutex */
-    mutable itk::SimpleFastMutexLock m_MutexOne;
+    mutable std::mutex m_MutexOne;
 
     /* Public Events */
     typedef Message1<const DataNode*> DataStorageEvent;
@@ -430,7 +430,7 @@ namespace mitk
   //##Documentation
   //## @brief returns the topmost visible node of a given list of nodes.
   //## The function returns a node that is visible and has the highest layer of a set of given nodes.
-  //## The property list, which is used to find the visibility- and layer-property is is specified by the
+  //## The property list, which is used to find the visibility- and layer-property is specified by the
   //## given base renderer.
   //##
   MITKCORE_EXPORT DataNode::Pointer FindTopmostVisibleNode(const DataStorage::SetOfObjects::ConstPointer nodes,

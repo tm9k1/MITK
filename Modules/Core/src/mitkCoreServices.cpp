@@ -19,20 +19,20 @@ found in the LICENSE file.
 #include <mitkIPropertyFilters.h>
 #include <mitkIPropertyPersistence.h>
 #include <mitkIPropertyRelations.h>
+#include <mitkIPreferencesService.h>
 
 #include <usGetModuleContext.h>
 #include <usModuleContext.h>
 #include <usServiceReference.h>
 #include <usServiceTracker.h>
 
-#include <itkMutexLockHolder.h>
-#include <itkSimpleFastMutexLock.h>
+#include <mutex>
 
 namespace mitk
 {
-  itk::SimpleFastMutexLock &s_ContextToServicesMapMutex()
+  std::mutex &s_ContextToServicesMapMutex()
   {
-    static itk::SimpleFastMutexLock mutex;
+    static std::mutex mutex;
     return mutex;
   }
 
@@ -57,7 +57,7 @@ namespace mitk
 
     assert(coreService && "Asserting non-nullptr MITK core service");
     {
-      itk::MutexLockHolder<itk::SimpleFastMutexLock> l(s_ContextToServicesMapMutex());
+      std::lock_guard<std::mutex> l(s_ContextToServicesMapMutex());
       s_ContextToServicesMap()[context].insert(std::make_pair(coreService, serviceRef));
     }
 
@@ -99,11 +99,16 @@ namespace mitk
     return GetCoreService<IMimeTypeProvider>(context);
   }
 
+  IPreferencesService *CoreServices::GetPreferencesService(us::ModuleContext *context)
+  {
+    return GetCoreService<IPreferencesService>(context);
+  }
+
   bool CoreServices::Unget(us::ModuleContext *context, const std::string & /*interfaceId*/, void *service)
   {
     bool success = false;
 
-    itk::MutexLockHolder<itk::SimpleFastMutexLock> l(s_ContextToServicesMapMutex());
+    std::lock_guard<std::mutex> l(s_ContextToServicesMapMutex());
     auto iter =
       s_ContextToServicesMap().find(context);
     if (iter != s_ContextToServicesMap().end())

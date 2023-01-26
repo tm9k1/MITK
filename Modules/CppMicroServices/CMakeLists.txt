@@ -169,8 +169,7 @@ endif()
 
 # Set C++ compiler flags
 if(NOT MSVC)
-  foreach(_cxxflag -Werror -Wall -Wextra -Wpointer-arith -Winvalid-pch -Wcast-align
-                   -Wwrite-strings -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast
+  foreach(_cxxflag -Werror -Wall -Wextra -Wpointer-arith -Winvalid-pch -Wcast-align -Wwrite-strings -Woverloaded-virtual -Wnon-virtual-dtor
                    -Wstrict-null-sentinel -Wsign-promo -fdiagnostics-show-option -Wno-error=deprecated-copy
                    -Wno-error=implicit-int-float-conversion)
     usFunctionCheckCompilerFlags(${_cxxflag} US_CXX_FLAGS)
@@ -204,9 +203,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   # type_info objects from STL types does not work (used in us::Any::Type() == typeid(std::string))
   # which could be related to the default visibility of STL types declared in libstdc++ and/or libc++
   # but also to using RTLD_LOCAL or RTLD_GLOBAL when loading shared libraries via dlopen().
-  #
-  # See http://comments.gmane.org/gmane.comp.compilers.clang.scm/50028
-  # and http://llvm.org/bugs/show_bug.cgi?id=10113
   #
   if(_have_visibility AND NOT ${GCC_VERSION} VERSION_LESS "4.5")
     set(US_CXX_FLAGS "${US_CXX_FLAGS} ${_have_visibility}")

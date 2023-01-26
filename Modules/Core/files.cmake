@@ -39,19 +39,21 @@ set(CPP_FILES
   Controllers/mitkCallbackFromGUIThread.cpp
   Controllers/mitkCameraController.cpp
   Controllers/mitkCameraRotationController.cpp
+  Controllers/mitkCrosshairManager.cpp
   Controllers/mitkLimitedLinearUndo.cpp
   Controllers/mitkOperationEvent.cpp
   Controllers/mitkPlanePositionManager.cpp
   Controllers/mitkProgressBar.cpp
   Controllers/mitkRenderingManager.cpp
   Controllers/mitkSliceNavigationController.cpp
-  Controllers/mitkSlicesCoordinator.cpp
+  Controllers/mitkSliceNavigationHelper.cpp
   Controllers/mitkStatusBar.cpp
   Controllers/mitkStepper.cpp
   Controllers/mitkTestManager.cpp
   Controllers/mitkUndoController.cpp
   Controllers/mitkVerboseLimitedLinearUndo.cpp
   Controllers/mitkVtkLayerController.cpp
+
   DataManagement/mitkAnatomicalStructureColorPresets.cpp
   DataManagement/mitkArbitraryTimeGeometry.cpp
   DataManagement/mitkAbstractTransformGeometry.cpp
@@ -178,14 +180,12 @@ set(CPP_FILES
   DataManagement/mitkVtkRepresentationProperty.cpp
   DataManagement/mitkVtkResliceInterpolationProperty.cpp
   DataManagement/mitkVtkScalarModeProperty.cpp
-  DataManagement/mitkVtkVolumeRenderingProperty.cpp
   DataManagement/mitkWeakPointerProperty.cpp
   DataManagement/mitkIPropertyRelations.cpp
   DataManagement/mitkPropertyRelations.cpp
 
   Interactions/mitkAction.cpp
   Interactions/mitkBindDispatcherInteractor.cpp
-  Interactions/mitkCrosshairPositionEvent.cpp
   Interactions/mitkDataInteractor.cpp
   Interactions/mitkDispatcher.cpp
   Interactions/mitkDisplayActionEventBroadcast.cpp
@@ -195,7 +195,6 @@ set(CPP_FILES
   Interactions/mitkDisplayActionEventHandlerStd.cpp
   Interactions/mitkDisplayActionEventHandlerSynchronized.cpp
   Interactions/mitkDisplayCoordinateOperation.cpp
-  Interactions/mitkDisplayInteractor.cpp
   Interactions/mitkEventConfig.cpp
   Interactions/mitkEventFactory.cpp
   Interactions/mitkEventRecorder.cpp
@@ -209,7 +208,6 @@ set(CPP_FILES
   Interactions/mitkInteractionSchemeSwitcher.cpp
   Interactions/mitkInternalEvent.cpp
   Interactions/mitkMouseDoubleClickEvent.cpp
-  Interactions/mitkMouseModeSwitcher.cpp
   Interactions/mitkMouseMoveEvent.cpp
   Interactions/mitkMousePressEvent.cpp
   Interactions/mitkMouseReleaseEvent.cpp
@@ -268,13 +266,21 @@ set(CPP_FILES
   IO/mitkSurfaceVtkIO.cpp
   IO/mitkSurfaceVtkLegacyIO.cpp
   IO/mitkSurfaceVtkXmlIO.cpp
+  IO/mitkUtf8Util.cpp
   IO/mitkVtkLoggingAdapter.cpp
   IO/mitkPreferenceListReaderOptionsFunctor.cpp
   IO/mitkIOMetaInformationPropertyConstants.cpp
+  IO/mitkIPreferences.cpp
+  IO/mitkPreferences.cpp
+  IO/mitkIPreferencesService.cpp
+  IO/mitkPreferencesService.cpp
+  IO/mitkIPreferencesStorage.cpp
+  IO/mitkXMLPreferencesStorage.cpp
 
   Rendering/mitkAbstractAnnotationRenderer.cpp
   Rendering/mitkAnnotationUtils.cpp
   Rendering/mitkBaseRenderer.cpp
+  Rendering/mitkBaseRendererHelper.cpp
   #Rendering/mitkGLMapper.cpp Moved to deprecated LegacyGL Module
   Rendering/mitkGradientBackground.cpp
   Rendering/mitkImageVtkMapper2D.cpp
@@ -304,21 +310,18 @@ set(CPP_FILES
 set(RESOURCE_FILES
 Interactions/globalConfig.xml
 Interactions/DisplayInteraction.xml
-Interactions/DisplayConfig.xml
-Interactions/DisplayConfigPACS.xml
+Interactions/DisplayConfigMITKBase.xml
+Interactions/DisplayConfigPACSBase.xml
+Interactions/DisplayConfigCrosshair.xml
+Interactions/DisplayConfigRotation.xml
+Interactions/DisplayConfigActivateCoupling.xml
+Interactions/DisplayConfigSwivel.xml
 Interactions/DisplayConfigPACSPan.xml
 Interactions/DisplayConfigPACSScroll.xml
 Interactions/DisplayConfigPACSZoom.xml
 Interactions/DisplayConfigPACSLevelWindow.xml
-Interactions/DisplayConfigMITK.xml
-Interactions/DisplayConfigMITKNoCrosshair.xml
-Interactions/DisplayConfigMITKRotation.xml
-Interactions/DisplayConfigMITKRotationUnCoupled.xml
-Interactions/DisplayConfigMITKSwivel.xml
-Interactions/DisplayConfigMITKLimited.xml
+Interactions/DisplayConfigBlockLMB.xml
 Interactions/PointSet.xml
-Interactions/Legacy/StateMachine.xml
-Interactions/Legacy/DisplayConfigMITKTools.xml
 Interactions/PointSetConfig.xml
 
 mitkLevelWindowPresets.xml

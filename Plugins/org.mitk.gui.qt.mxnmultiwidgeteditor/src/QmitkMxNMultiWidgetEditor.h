@@ -35,8 +35,29 @@ public:
 
   virtual QmitkLevelWindowWidget* GetLevelWindowWidget() const override { return nullptr; }
 
-  void OnLayoutSet(int row, int column);
-  void OnInteractionSchemeChanged(mitk::InteractionSchemeSwitcher::InteractionScheme scheme);
+  /**
+* @brief Overridden from berry::IPartListener
+*/
+  virtual berry::IPartListener::Events::Types GetPartEventTypes() const override;
+  /**
+  * @brief Overridden from berry::IPartListener
+  */
+  virtual void PartClosed(const berry::IWorkbenchPartReference::Pointer& partRef) override;
+  /**
+  * @brief Overridden from berry::IPartListener
+  */
+  virtual void PartOpened(const berry::IWorkbenchPartReference::Pointer& partRef) override;
+  /**
+  * @brief Overridden from berry::IPartListener
+  */
+  virtual void PartHidden(const berry::IWorkbenchPartReference::Pointer& partRef) override;
+  /**
+  * @brief Overridden from berry::IPartListener
+  */
+  virtual void PartVisible(const berry::IWorkbenchPartReference::Pointer& partRef) override;
+
+  void OnLayoutSet(int row, int column) override;
+  void OnInteractionSchemeChanged(mitk::InteractionSchemeSwitcher::InteractionScheme scheme) override;
 
 private:
   /**
@@ -50,7 +71,7 @@ private:
   /**
   * @brief Overridden from QmitkAbstractRenderEditor
   */
-  void OnPreferencesChanged(const berry::IBerryPreferences* preferences) override;
+  void OnPreferencesChanged(const mitk::IPreferences* preferences) override;
 
   struct Impl;
   std::unique_ptr<Impl> m_Impl;

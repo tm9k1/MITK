@@ -79,10 +79,10 @@ void mitk::HistogramGenerator::ComputeHistogram()
 
   // debug code
   /*
-    MITK_INFO << "Histogram modfied 1" << m_Histogram->GetMTime() << std::endl;
+    MITK_INFO << "Histogram modified 1" << m_Histogram->GetMTime() << std::endl;
     m_Histogram->Modified();
-    MITK_INFO << "Histogram modfied 2" << m_Histogram->GetMTime() << std::endl;
-    MITK_INFO << "Image modfied" << m_Image->GetMTime() << std::endl;
+    MITK_INFO << "Histogram modified 2" << m_Histogram->GetMTime() << std::endl;
+    MITK_INFO << "Image modified" << m_Image->GetMTime() << std::endl;
   const unsigned int histogramSize = m_Histogram->Size();
 
   MITK_INFO << "Histogram size " << histogramSize << std::endl;
@@ -105,7 +105,7 @@ void mitk::HistogramGenerator::ComputeHistogram()
 float mitk::HistogramGenerator::GetMaximumFrequency() const
 {
   return CalculateMaximumFrequency(this->m_Histogram);
-};
+}
 
 float mitk::HistogramGenerator::CalculateMaximumFrequency(const HistogramType *histogram)
 {
@@ -115,11 +115,8 @@ float mitk::HistogramGenerator::CalculateMaximumFrequency(const HistogramType *h
   float maxFreq = 0;
   while (itr != end)
   {
-    maxFreq = vnl_math_max(maxFreq,
-                           // get rid of ambiguity with type signature
-                           // for vnl_math_max
-                           static_cast<float>(itr.GetFrequency()));
+    maxFreq = std::max(maxFreq, static_cast<float>(itr.GetFrequency()));
     ++itr;
   }
   return maxFreq;
-};
+}

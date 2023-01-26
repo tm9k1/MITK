@@ -27,7 +27,6 @@ found in the LICENSE file.
 // MITK
 #include <mitkVector.h>
 #include "mitkIOUtil.h"
-#include "mitkIRenderingManager.h"
 #include <mitkBaseData.h>
 #include <mitkImageGenerator.h>
 #include <mitkNodePredicateDataType.h>
@@ -95,7 +94,8 @@ QmitkUltrasoundCalibration::~QmitkUltrasoundCalibration()
     this->GetDataStorage()->Remove(node);
 
   this->GetDataStorage()->Remove(m_VerificationReferencePointsDataNode);
-
+  this->GetDataStorage()->Remove(m_SpacingNode);
+  
   delete m_Timer;
 
   // remove observer for phantom-based point adding

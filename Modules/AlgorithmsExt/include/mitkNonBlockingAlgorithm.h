@@ -14,10 +14,8 @@ found in the LICENSE file.
 #define MITK_NON_BLOCKING_ALGORITHM_H_INCLUDED_DFARdfWN1tr
 
 #include "MitkAlgorithmsExtExports.h"
-#include <itkFastMutexLock.h>
 #include <itkImage.h>
 #include <itkMacro.h>
-#include <itkMultiThreader.h>
 #include <itkObjectFactory.h>
 
 #include "mitkCommon.h"
@@ -30,6 +28,7 @@ found in the LICENSE file.
 #include "mitkImage.h"
 #include "mitkSurface.h"
 
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
@@ -79,13 +78,6 @@ namespace mitk
   class MITKALGORITHMSEXT_EXPORT NonBlockingAlgorithm : public itk::Object
   {
   public:
-    // for threading
-    class MITKALGORITHMSEXT_EXPORT ThreadParameters
-    {
-    public:
-      itk::SmartPointer<NonBlockingAlgorithm> m_Algorithm;
-    };
-
     mitkClassMacroItkParent(NonBlockingAlgorithm, itk::Object);
 
     void SetDataStorage(DataStorage &storage);
@@ -109,9 +101,9 @@ namespace mitk
     {
       // MITK_INFO << this << "->SetParameter smartpointer(" << parameter << ") " << typeid(itk::SmartPointer<T>).name()
       // << std::endl;
-      m_ParameterListMutex->Lock();
+      m_ParameterListMutex.lock();
       m_Parameters->SetProperty(parameter, SmartPointerProperty::New(value.GetPointer()));
-      m_ParameterListMutex->Unlock();
+      m_ParameterListMutex.unlock();
     }
     // virtual void SetParameter( const char*, mitk::BaseProperty* ); // for "number of iterations", ...
     // create some property observing to inform algorithm object about changes
@@ -228,18 +220,16 @@ namespace mitk
     WeakPointer<DataStorage> m_DataStorage;
 
   private:
-    static ITK_THREAD_RETURN_TYPE StaticNonBlockingAlgorithmThread(void *param);
+    static void StaticNonBlockingAlgorithmThread(NonBlockingAlgorithm* algorithm);
 
     typedef std::map<std::string, unsigned long> MapTypeStringUInt;
 
     MapTypeStringUInt m_TriggerPropertyConnections;
 
-    itk::FastMutexLock::Pointer m_ParameterListMutex;
+    std::mutex m_ParameterListMutex;
 
-    int m_ThreadID;
     int m_UpdateRequests;
-    ThreadParameters m_ThreadParameters;
-    itk::MultiThreader::Pointer m_MultiThreader;
+    std::thread m_Thread;
 
     bool m_KillRequest;
   };

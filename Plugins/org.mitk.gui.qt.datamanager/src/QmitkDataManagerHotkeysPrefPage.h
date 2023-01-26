@@ -55,12 +55,6 @@ public:
 
 protected:
   /**
-  * @brief The node from which the properties are taken (will be catched from the preferences service in ctor)
-  *
-  *
-  */
-  berry::IPreferences::WeakPtr m_DataManagerHotkeysPreferencesNode;
-  /**
   * @brief Maps a label to hotkey lineedit, e.g. "Toggle Visibility of selected nodes" => QmitkHotkeyLineEdit
   *
   *

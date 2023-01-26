@@ -16,7 +16,6 @@ found in the LICENSE file.
 
 #include "berryIQtPreferencePage.h"
 #include <org_mitk_gui_qt_datamanager_Export.h>
-#include <berryIPreferences.h>
 
 class QWidget;
 class QCheckBox;
@@ -56,9 +55,7 @@ protected:
   QCheckBox* m_PlaceNewNodesOnTop;
   QCheckBox* m_ShowHelperObjects;
   QCheckBox* m_ShowNodesContainingNoData;
-  QCheckBox* m_UseSurfaceDecimation;
   QCheckBox* m_AllowParentChange;
-  berry::IPreferences::Pointer m_DataManagerPreferencesNode;
 };
 
 #endif /* QMITKDATAMANAGERPREFERENCEPAGE_H_ */

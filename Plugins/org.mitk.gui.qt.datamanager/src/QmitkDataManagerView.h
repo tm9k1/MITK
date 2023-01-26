@@ -18,9 +18,6 @@ found in the LICENSE file.
 // mitk core
 #include <mitkNodePredicateBase.h>
 
-// berry plugin
-#include <berryIBerryPreferences.h>
-
 // mitk gui qt common plugin
 #include <QmitkAbstractView.h>
 
@@ -31,10 +28,8 @@ found in the LICENSE file.
 #include <QItemSelection>
 
 // forward declarations
-class QAction;
 class QModelIndex;
 class QTreeView;
-class QSignalMapper;
 
 class QmitkDnDFrameWidget;
 class QmitkDataStorageTreeModel;
@@ -60,7 +55,7 @@ public:
 public Q_SLOTS:
 
   // invoked when the berry preferences were changed
-  void OnPreferencesChanged(const berry::IBerryPreferences* prefs) override;
+  void OnPreferencesChanged(const mitk::IPreferences* prefs) override;
 
   //////////////////////////////////////////////////////////////////////////
   // Slots for Qt node tree signals
@@ -75,9 +70,6 @@ public Q_SLOTS:
   void NodeSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
   void OnNodeVisibilityChanged();
-
-  /// Opens the editor with the given id using the current data storage
-  void ShowIn(const QString& editorId);
 
 protected:
 
@@ -101,10 +93,7 @@ protected:
   QmitkDataStorageFilterProxyModel* m_FilterModel;
   mitk::NodePredicateBase::Pointer m_HelperObjectFilterPredicate;
   mitk::NodePredicateBase::Pointer m_NodeWithNoDataFilterPredicate;
-  ///
-  /// Holds the preferences for the data manager.
-  ///
-  berry::IBerryPreferences::Pointer m_DataManagerPreferencesNode;
+
   ///
   /// \brief The Table view to show the selected nodes.
   ///
@@ -113,16 +102,6 @@ protected:
   /// \brief The context menu that shows up when right clicking on a node.
   ///
   QmitkDataNodeContextMenu* m_DataNodeContextMenu;
-  ///
-  /// \brief flag indicating whether a surface created from a selected decimation is decimated with vtkQuadricDecimation or not
-  ///
-  bool m_SurfaceDecimation;
-
-  /// Maps "Show in" actions to editor ids
-  QSignalMapper* m_ShowInMapper;
-
-  /// A list of "Show in" actions
-  QList<QAction*> m_ShowInActions;
 
   /// saves the current amount of rows shown in the data manager
   size_t m_CurrentRowCount;

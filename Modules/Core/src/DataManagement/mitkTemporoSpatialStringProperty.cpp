@@ -12,12 +12,13 @@ found in the LICENSE file.
 
 #include <iterator>
 #include <set>
+#include <type_traits>
 
 #include "mitkTemporoSpatialStringProperty.h"
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/type_traits/make_unsigned.hpp>
+#include <nlohmann/json.hpp>
+
+using namespace nlohmann;
 
 mitk::TemporoSpatialStringProperty::TemporoSpatialStringProperty(const char *s)
 {
@@ -272,7 +273,7 @@ void mitk::TemporoSpatialStringProperty::SetValue(const ValueType &value)
 // the public interface of ptree::json_writer. :(
 // A own serialization strategy was implemented instead of using boost::ptree::json_write because
 // currently (<= boost 1.60) everything (even numbers) are converted into string representations
-// by the writer, so e.g. it becomes "t":"2" instaed of "t":2
+// by the writer, so e.g. it becomes "t":"2" instead of "t":2
 template <class Ch>
 std::basic_string<Ch> CreateJSONEscapes(const std::basic_string<Ch> &s)
 {
@@ -281,7 +282,7 @@ std::basic_string<Ch> CreateJSONEscapes(const std::basic_string<Ch> &s)
   typename std::basic_string<Ch>::const_iterator e = s.end();
   while (b != e)
   {
-    typedef typename boost::make_unsigned<Ch>::type UCh;
+    using UCh = std::make_unsigned_t<Ch>;
     UCh c(*b);
     // This assumes an ASCII superset.
     // We escape everything outside ASCII, because this code can't
@@ -333,7 +334,7 @@ using CondensedTimePointsType = std::map<CondensedTimeKeyType, std::string>;
 using CondensedSliceKeyType = std::pair<mitk::TemporoSpatialStringProperty::IndexValueType, mitk::TemporoSpatialStringProperty::IndexValueType>;
 using CondensedSlicesType = std::map<CondensedSliceKeyType, CondensedTimePointsType>;
 
-/** Helper function that checks if between an ID and a successing ID is no gap.*/
+/** Helper function that checks if between an ID and a successive ID is no gap.*/
 template<typename TValue>
 bool isGap(const TValue& value, const TValue& successor)
 {
@@ -383,8 +384,8 @@ CondensedSlicesType CondenseTimePointValuesOfProperty(const mitk::TemporoSpatial
 {
   // REMARK: Implemented own serialization instead of using boost::ptree::json_write because
   // currently (<= boost 1.60) everything (even numbers) are converted into string representations
-  // by the writer, so e.g. it becomes "t":"2" instaed of "t":2
-  // If this problem is fixed with boost, we shoud switch back to json_writer (and remove the custom
+  // by the writer, so e.g. it becomes "t":"2" instead of "t":2
+  // If this problem is fixed with boost, we should switch back to json_writer (and remove the custom
   // implementation of CreateJSONEscapes (see above)).
   const auto *tsProp = dynamic_cast<const mitk::TemporoSpatialStringProperty *>(prop);
 
@@ -402,7 +403,7 @@ CondensedSlicesType CondenseTimePointValuesOfProperty(const mitk::TemporoSpatial
   //internal layout). Reason: There is more entropy in slices (looking at DICOM)
   //than across time points for one slice, so we can "compress" to a higher rate.
   //We don't wanted to change the internal structure of the property as it would
-  //introduce API inconvinience and subtle changes in behavior.
+  //introduce API inconvenience and subtle changes in behavior.
   CondensedSlicesType uncondensedSlices = CondenseTimePointValuesOfProperty(tsProp);
 
   //now condense the slices
@@ -469,22 +470,15 @@ mitk::BaseProperty::Pointer mitk::PropertyPersistenceDeserialization::deserializ
 
   mitk::TemporoSpatialStringProperty::Pointer prop = mitk::TemporoSpatialStringProperty::New();
 
-  boost::property_tree::ptree root;
+  auto root = json::parse(value);
 
-  std::istringstream stream(value);
-  stream.imbue(std::locale("C"));
-
-  boost::property_tree::read_json(stream, root);
-
-  for (boost::property_tree::ptree::value_type &element : root.get_child("values"))
+  for (const auto& element : root["values"])
   {
-    std::string value = element.second.get("value", "");
-    mitk::TemporoSpatialStringProperty::IndexValueType z =
-      element.second.get<mitk::TemporoSpatialStringProperty::IndexValueType>("z", 0);
-    mitk::TemporoSpatialStringProperty::IndexValueType zmax =
-      element.second.get<mitk::TemporoSpatialStringProperty::IndexValueType>("zmax", z);
-    TimeStepType t = element.second.get<TimeStepType>("t", 0);
-    TimeStepType tmax = element.second.get<TimeStepType>("tmax", t);
+    auto value = element.value("value", "");
+    auto z = element.value<TemporoSpatialStringProperty::IndexValueType>("z", 0);
+    auto zmax = element.value<TemporoSpatialStringProperty::IndexValueType>("zmax", z);
+    auto t = element.value<TimeStepType>("t", 0);
+    auto tmax = element.value<TimeStepType>("tmax", t);
 
     for (auto currentT = t; currentT <= tmax; ++currentT)
     {

@@ -71,11 +71,11 @@ namespace ReinitAction
       {
         if (nullptr == baseRenderer)
         {
-          mitk::RenderingManager::GetInstance()->InitializeViews(image->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true);
+          mitk::RenderingManager::GetInstance()->InitializeViews(image->GetTimeGeometry());
         }
         else
         {
-          mitk::RenderingManager::GetInstance()->InitializeView(baseRenderer->GetRenderWindow(), image->GetTimeGeometry(), true);
+          mitk::RenderingManager::GetInstance()->InitializeView(baseRenderer->GetRenderWindow(), image->GetTimeGeometry());
         }
         return;
       }
@@ -116,12 +116,16 @@ void QmitkDataNodeReinitAction::InitializeAction()
 
 void QmitkDataNodeReinitAction::OnActionTriggered(bool /*checked*/)
 {
-  if (m_WorkbenchPartSite.Expired())
+  auto workbenchPartSite = m_WorkbenchPartSite.Lock();
+
+  if (workbenchPartSite.IsNull())
   {
     return;
   }
 
-  if (m_DataStorage.IsExpired())
+  auto dataStorage = m_DataStorage.Lock();
+
+  if (dataStorage.IsNull())
   {
     return;
   }
@@ -129,5 +133,5 @@ void QmitkDataNodeReinitAction::OnActionTriggered(bool /*checked*/)
   mitk::BaseRenderer::Pointer baseRenderer = GetBaseRenderer();
 
   auto selectedNodes = GetSelectedNodes();
-  ReinitAction::Run(m_WorkbenchPartSite.Lock(), m_DataStorage.Lock(), selectedNodes, baseRenderer);
+  ReinitAction::Run(workbenchPartSite, dataStorage, selectedNodes, baseRenderer);
 }

@@ -30,9 +30,10 @@ For details, please read the [Supported Platforms][platforms] page.
 ### Build status of develop branch
 
 [![Windows][windows-build-status]][cdash]
-[![Ubuntu 18.04][ubuntu-18.04-build-status]][cdash]
 [![Ubuntu 20.04][ubuntu-20.04-build-status]][cdash]
-[![macOS 10.14 Mojave][macos-10.14-build-status]][cdash]
+[![Ubuntu 22.04][ubuntu-22.04-build-status]][cdash]
+[![macOS 10.15 Catalina][macos-10.15-build-status]][cdash]
+[![macOS 11 Big Sur][macos-11-build-status]][cdash]
 
 We highly recommend to use the stable **master** branch instead. It is updated 1-2 times per month accompanied by curated [changelogs][changelog] and [snapshot installers][snapshot-installers].
 
@@ -81,28 +82,29 @@ Useful links
  - [Issue tracker][bugs]
 
 [logo]: https://github.com/MITK/MITK/raw/master/mitk.png
-[mitk]: http://mitk.org
+[mitk]: https://www.mitk.org
 [itk]: https://itk.org
 [vtk]: https://vtk.org
-[mitk-overview]: http://docs.mitk.org/nightly/Overview.html
-[mitk-usermanual]: http://docs.mitk.org/nightly/UserManualPortal.html
-[mitk-devmanual]: http://docs.mitk.org/nightly/DeveloperManualPortal.html
-[mitk-apiref]: http://docs.mitk.org/nightly/usergroup0.html
-[platforms]: http://docs.mitk.org/nightly/SupportedPlatformsPage.html
+[mitk-overview]: https://docs.mitk.org/nightly/
+[mitk-usermanual]: https://docs.mitk.org/nightly/UserManualPortal.html
+[mitk-devmanual]: https://docs.mitk.org/nightly/DeveloperManualPortal.html
+[mitk-apiref]: https://docs.mitk.org/nightly/usergroup0.html
+[platforms]: https://docs.mitk.org/nightly/SupportedPlatformsPage.html
 [dkfz]: https://www.dkfz.de
 [license]: https://github.com/MITK/MITK/blob/master/LICENSE
-[release-cycle]: http://mitk.org/MitkReleaseCycle
-[download]: http://mitk.org/Download
+[release-cycle]: https://www.mitk.org/MitkReleaseCycle
+[download]: https://www.mitk.org/Download
 [phab_repo]: https://phabricator.mitk.org/source/mitk/
-[contribute]: http://mitk.org/How_to_contribute
+[contribute]: https://www.mitk.org/How_to_contribute
 [cmake]: https://www.cmake.org
-[build]: http://docs.mitk.org/nightly/BuildInstructionsPage.html
-[mailinglist]: http://mitk.org/Mailinglist
+[build]: https://docs.mitk.org/nightly/BuildInstructionsPage.html
+[mailinglist]: https://www.mitk.org/Mailinglist
 [bugs]: https://phabricator.mitk.org/maniphest/
 [cdash]: https://cdash.mitk.org/index.php?project=MITK
 [changelog]: https://phabricator.mitk.org/w/mitk/changelog/
 [snapshot-installers]: https://www.mitk.org/download/ci/snapshots/
 [windows-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FWindows&subject=Windows
-[ubuntu-18.04-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FUbuntu+18.04&subject=Ubuntu+18.04
+[ubuntu-22.04-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FUbuntu+22.04&subject=Ubuntu+22.04
 [ubuntu-20.04-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FUbuntu+20.04&subject=Ubuntu+20.04
-[macOS-10.14-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FmacOS+Mojave&subject=macOS+10.14+Mojave
+[macOS-10.15-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FmacOS+Catalina&subject=macOS+10.15+Catalina
+[macOS-11-build-status]: https://ci.mitk.org/buildStatus/icon?job=MITK%2FContinuous%2FmacOS+Big+Sur&subject=macOS+11+Big+Sur

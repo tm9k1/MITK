@@ -10,18 +10,19 @@ found in the LICENSE file.
 
 ============================================================================*/
 
-
-#ifndef QmitkSegmentationPreferencePage_h_included
-#define QmitkSegmentationPreferencePage_h_included
+#ifndef QMITKSEGMENTATIONPREFERENCEPAGE_H
+#define QMITKSEGMENTATIONPREFERENCEPAGE_H
 
 #include "org_mitk_gui_qt_segmentation_Export.h"
-#include <berryIPreferences.h>
-#include "berryIQtPreferencePage.h"
+
+#include <berryIQtPreferencePage.h>
 
 class QWidget;
-class QCheckBox;
-class QRadioButton;
-class QDoubleSpinBox;
+
+namespace Ui
+{
+  class QmitkSegmentationPreferencePageControls;
+}
 
 class MITK_QT_SEGMENTATION QmitkSegmentationPreferencePage : public QObject, public berry::IQtPreferencePage
 {
@@ -39,41 +40,23 @@ public:
 
   QWidget* GetQtControl() const override;
 
-  ///
-  /// \see IPreferencePage::PerformOk()
-  ///
   bool PerformOk() override;
 
-  ///
-  /// \see IPreferencePage::PerformCancel()
-  ///
   void PerformCancel() override;
 
-  ///
-  /// \see IPreferencePage::Update()
-  ///
   void Update() override;
 
-protected slots:
+protected Q_SLOTS:
 
-  void OnSmoothingCheckboxChecked(int);
+  void OnLabelSetPresetButtonClicked();
+  void OnSuggestionsButtonClicked();
 
 protected:
 
-  QWidget* m_MainControl;
-  QCheckBox* m_SlimViewCheckBox;
-  QRadioButton* m_RadioOutline;
-  QRadioButton* m_RadioOverlay;
-  QCheckBox* m_SmoothingCheckBox;
-  QDoubleSpinBox* m_SmoothingSpinBox;
-  QDoubleSpinBox* m_DecimationSpinBox;
-  QDoubleSpinBox* m_ClosingSpinBox;
-  QCheckBox* m_SelectionModeCheckBox;
+  Ui::QmitkSegmentationPreferencePageControls* m_Ui;
+  QWidget* m_Control;
 
   bool m_Initializing;
-
-  berry::IPreferences::Pointer m_SegmentationPreferencesNode;
 };
 
-#endif /* QMITKDATAMANAGERPREFERENCEPAGE_H_ */
-
+#endif // QMITKSEGMENTATIONPREFERENCEPAGE_H

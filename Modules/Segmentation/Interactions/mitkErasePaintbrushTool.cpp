@@ -25,9 +25,8 @@ namespace mitk
   MITK_TOOL_MACRO(MITKSEGMENTATION_EXPORT, ErasePaintbrushTool, "Paintbrush erasing tool");
 }
 
-mitk::ErasePaintbrushTool::ErasePaintbrushTool() : PaintbrushTool(0)
+mitk::ErasePaintbrushTool::ErasePaintbrushTool() : PaintbrushTool(false)
 {
-  FeedbackContourTool::SetFeedbackContourColor(1.0, 0.0, 0.0);
 }
 
 mitk::ErasePaintbrushTool::~ErasePaintbrushTool()
@@ -42,14 +41,14 @@ const char **mitk::ErasePaintbrushTool::GetXPM() const
 us::ModuleResource mitk::ErasePaintbrushTool::GetIconResource() const
 {
   us::Module *module = us::GetModuleContext()->GetModule();
-  us::ModuleResource resource = module->GetResource("Wipe_48x48.png");
+  us::ModuleResource resource = module->GetResource("Wipe.svg");
   return resource;
 }
 
 us::ModuleResource mitk::ErasePaintbrushTool::GetCursorIconResource() const
 {
   us::Module *module = us::GetModuleContext()->GetModule();
-  us::ModuleResource resource = module->GetResource("Wipe_Cursor_32x32.png");
+  us::ModuleResource resource = module->GetResource("Wipe_Cursor.svg");
   return resource;
 }
 

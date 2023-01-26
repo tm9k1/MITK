@@ -22,9 +22,6 @@ found in the LICENSE file.
 #include <itkObject.h>
 #include <itkWeakPointer.h>
 
-// Just included to get VTK version
-#include <vtkConfigure.h>
-
 class vtkWindow;
 class vtkProp;
 
@@ -43,7 +40,7 @@ namespace mitk
    *
    * The LocalStorageHandler is responsible for providing a LocalStorage to a
    * concrete mitk::Mapper subclass. Each RenderWindow / mitk::BaseRenderer is
-   * assigned its own LocalStorage instance so that all contained ressources
+   * assigned its own LocalStorage instance so that all contained resources
    * (actors, shaders, textures, ...) are provided individually per window.
    *
    */
@@ -54,7 +51,7 @@ namespace mitk
     std::map<mitk::BaseRenderer *, L *> m_BaseRenderer2LS;
 
   public:
-    /** \brief deallocates a local storage for a specifc BaseRenderer (if the
+    /** \brief deallocates a local storage for a specific BaseRenderer (if the
      * BaseRenderer is itself deallocating it in its destructor, it has to set
      * unregisterFromBaseRenderer=false)
      */

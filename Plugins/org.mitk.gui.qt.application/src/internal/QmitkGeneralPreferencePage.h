@@ -14,7 +14,6 @@ found in the LICENSE file.
 #define QMITKGENERALPREFERENCEPAGE_H
 
 #include "berryIQtPreferencePage.h"
-#include <berryIPreferences.h>
 
 class QWidget;
 class QCheckBox;
@@ -64,8 +63,6 @@ protected:
 
     QCheckBox* m_GlobalReinitOnNodeDelete;
     QCheckBox* m_GlobalReinitOnNodeVisibilityChanged;
-
-    berry::IPreferences::Pointer m_GeneralPreferencesNode;
 };
 
 #endif // QMITKGENERALPREFERENCEPAGE_H

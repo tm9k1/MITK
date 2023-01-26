@@ -12,6 +12,7 @@ found in the LICENSE file.
 
 #include "QmitkMitkWorkbenchIntroPlugin.h"
 #include "QmitkMitkWorkbenchIntroPart.h"
+#include "QmitkMitkWorkbenchIntroPreferencePage.h"
 
 #include <mitkVersion.h>
 #include <mitkLogMacros.h>
@@ -21,6 +22,10 @@ found in the LICENSE file.
 
 #include <QFileInfo>
 #include <QDateTime>
+
+#include <usModuleInitialization.h>
+
+US_INITIALIZE_MODULE
 
 QmitkMitkWorkbenchIntroPlugin* QmitkMitkWorkbenchIntroPlugin::inst = nullptr;
 
@@ -44,7 +49,8 @@ void QmitkMitkWorkbenchIntroPlugin::start(ctkPluginContext* context)
 
   this->context = context;
 
-  BERRY_REGISTER_EXTENSION_CLASS(QmitkMitkWorkbenchIntroPart, context);
+  BERRY_REGISTER_EXTENSION_CLASS(QmitkMitkWorkbenchIntroPart, context)
+  BERRY_REGISTER_EXTENSION_CLASS(QmitkMitkWorkbenchIntroPreferencePage, context)
 }
 
 ctkPluginContext* QmitkMitkWorkbenchIntroPlugin::GetPluginContext() const

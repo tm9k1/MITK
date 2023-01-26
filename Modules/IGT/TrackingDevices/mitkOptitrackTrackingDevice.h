@@ -15,16 +15,15 @@ found in the LICENSE file.
 
 #include <MitkIGTExports.h>
 #include <mitkTrackingDevice.h>
-#include <itkMultiThreader.h>
 #include <mitkTrackingTypes.h>
 #include <mitkIGTTimeStamp.h>
-#include <itkFastMutexLock.h>
 #include <itksys/SystemTools.hxx>
-#include <itkMutexLockHolder.h>
 #include <string>
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <thread>
+#include <mutex>
 
 /**
 * \brief IGT Exceptions
@@ -39,15 +38,6 @@ found in the LICENSE file.
 #include "mitkOptitrackTrackingTool.h"
 
 
-
-/**
-* \brief MutexHolder to keep rest of Mutex
-*/
-typedef itk::MutexLockHolder<itk::FastMutexLock> MutexLockHolder;
-
-
-
-
 namespace mitk
 {
   /** Documentation:
@@ -55,7 +45,7 @@ namespace mitk
   *          device, then open the connection and start tracking. The tracking device will then
   *          continuously update the tool coordinates. Remember that it will be necessary to
   *       to have a license for using the Optitrack System.
-  *       See  http://www.naturalpoint.com/ for details.
+  *       See  https://www.naturalpoint.com/ for details.
   *   \author E. Marinetto (emarinetto@hggm.es) Instituto de Investigación Sanitaria Gregorio Marañón, Madrid, Spain. & M. Noll (matthias.noll@igd.fraunhofer.de) Cognitive Computing & Medical Imaging | Fraunhofer IGD
   *   \ingroup IGT
   */
@@ -156,9 +146,8 @@ namespace mitk
 
     /**
     * \brief Start the Tracking Thread for the tools
-    * @throw mitk::IGTException Throws an exception if variable trackingDevice is nullptr
     */
-    static ITK_THREAD_RETURN_TYPE ThreadStartTracking(void* data);
+    void ThreadStartTracking();
 
     /**
     * \brief Update each tool location in the list m_AllTools
@@ -259,17 +248,9 @@ namespace mitk
     /**
     * \brief Mutex for coordinated access of tool container
     */
-    itk::FastMutexLock::Pointer m_ToolsMutex;
+    mutable std::mutex m_ToolsMutex;
 
-    /**
-    * \brief MultiThreader that starts continuous tracking update
-    */
-    itk::MultiThreader::Pointer m_MultiThreader;
-
-    /**
-    * \brief ThreadID number identification
-    */
-    int m_ThreadID;
+    std::thread m_Thread;
 
 
 /* TODO:

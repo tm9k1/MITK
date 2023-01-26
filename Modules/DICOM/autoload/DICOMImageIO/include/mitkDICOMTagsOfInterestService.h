@@ -14,12 +14,10 @@ found in the LICENSE file.
 #define mitkDICOMTagsOfInterestService_h
 
 #include <string>
+#include <mutex>
 #include <vector>
 #include <set>
 #include <mitkIDICOMTagsOfInterest.h>
-
-#include <itkFastMutexLock.h>
-#include <itkMutexLockHolder.h>
 
 namespace mitk
 {
@@ -28,7 +26,7 @@ namespace mitk
    * \brief DICOM tags of interest service.
    *
    * This service allows you to manage the tags of interest (toi).
-   * All registred toi will be extracted when loading dicom data and stored as properties in the corresponding
+   * All registered toi will be extracted when loading dicom data and stored as properties in the corresponding
    * base data object. In addition the service can (if available) use IPropertyPersistance and IPropertyDescriptions
    * to ensure that the tags of interests are also persisted and have a human readable descriptions.
    */
@@ -51,10 +49,10 @@ namespace mitk
   private:
 
     typedef std::set<DICOMTagPath> InternalTagSetType;
-    typedef itk::MutexLockHolder<itk::SimpleFastMutexLock> MutexHolder;
+    typedef std::lock_guard<std::mutex> MutexHolder;
 
     InternalTagSetType m_Tags;
-    mutable itk::SimpleFastMutexLock m_Lock;
+    mutable std::mutex m_Lock;
 
     DICOMTagsOfInterestService(const DICOMTagsOfInterestService&);
     DICOMTagsOfInterestService& operator=(const DICOMTagsOfInterestService&);

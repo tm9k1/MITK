@@ -56,7 +56,7 @@ namespace mitk
      * @brief Reads a path or stream and creates a list of BaseData objects.
      *
      * The default implementation of this method (1) calls DoRead()
-     * (Implement the specific reader operation there) and (2) it addes general
+     * (Implement the specific reader operation there) and (2) it adds general
      * meta information about the loading process.
      */
     std::vector<itk::SmartPointer<BaseData>> Read() override;
@@ -94,6 +94,8 @@ namespace mitk
      * @return A list of files that were loaded during the last call of Read. Has to be filled by the actual reader class.
      */
     std::vector< std::string > GetReadFiles() override;
+
+    void SetProperties(const PropertyList* properties) override;
 
   protected:
     /**
@@ -222,6 +224,8 @@ namespace mitk
     std::string GetLocalFileName() const;
 
     virtual void SetDefaultDataNodeProperties(DataNode *node, const std::string &filePath);
+
+    const PropertyList* GetProperties() const override;
 
     std::vector< std::string > m_ReadFiles;
 

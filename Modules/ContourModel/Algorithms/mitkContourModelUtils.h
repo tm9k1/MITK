@@ -36,33 +36,28 @@ namespace mitk
 
       \param slice
       \param contourIn3D
-      \param correctionForIpSegmentation adds 0.5 to x and y index coordinates (difference between ipSegmentation and
-      MITK contours)
-      \param constrainToInside
     */
     static ContourModel::Pointer ProjectContourTo2DSlice(const Image *slice,
-                                                         const ContourModel *contourIn3D,
-                                                         bool correctionForIpSegmentation,
-                                                         bool constrainToInside);
+                                                         const ContourModel *contourIn3D);
 
     /**
       \brief Projects a slice index coordinates of a contour back into world coordinates.
 
       \param sliceGeometry
       \param contourIn2D
-      \param correctionForIpSegmentation subtracts 0.5 to x and y index coordinates (difference between ipSegmentation
-      and MITK contours)
     */
     static ContourModel::Pointer BackProjectContourFrom2DSlice(const BaseGeometry *sliceGeometry,
-                                                               const ContourModel *contourIn2D,
-                                                               bool correctionForIpSegmentation = false);
+                                                               const ContourModel *contourIn2D);
 
     /**
     \brief Fill a contour in a 2D slice with a specified pixel value.
     This version always uses the contour of time step 0 and fills the image.
+    \deprecated Ths function is deprecated. Use FillContourInSlice2() (in
+    conjunction e.g. with TransferLabelContent()) instead.
     \pre sliceImage points to a valid instance
     \pre projectedContour points to a valid instance
     */
+    [[deprecated]]
     static void FillContourInSlice(const ContourModel *projectedContour,
                                    Image *sliceImage,
                                    const Image* workingImage,
@@ -72,14 +67,48 @@ namespace mitk
     \brief Fill a contour in a 2D slice with a specified pixel value.
     This overloaded version uses the contour at the passed contourTimeStep
     to fill the passed image slice.
+    \deprecated Ths function is deprecated. Use FillContourInSlice2() (in
+    conjunction e.g. with TransferLabelContent()) instead.
     \pre sliceImage points to a valid instance
     \pre projectedContour points to a valid instance
     */
+    [[deprecated]]
     static void FillContourInSlice(const ContourModel *projectedContour,
                                    TimeStepType contourTimeStep,
                                    Image *sliceImage,
                                    const Image* workingImage,
                                    int paintingPixelValue = 1);
+
+    /**
+    \brief Fill a contour in a 2D slice with a specified pixel value.
+    This version always uses the contour of time step 0 and fills the image.
+    \param projectedContour Pointer to the contour that should be projected.
+    \param sliceImage Pointer to the image which content should be altered by
+    adding the contour with the specified paintingPixelValue.
+    \param paintingPixelValue
+    \pre sliceImage points to a valid instance
+    \pre projectedContour points to a valid instance
+    */
+    static void FillContourInSlice2(const ContourModel* projectedContour,
+      Image* sliceImage,
+      int paintingPixelValue = 1);
+
+    /**
+    \brief Fill a contour in a 2D slice with a specified pixel value.
+    This overloaded version uses the contour at the passed contourTimeStep
+    to fill the passed image slice.
+    \param projectedContour Pointer to the contour that should be projected.
+    \param contourTimeStep
+    \param sliceImage Pointer to the image which content should be altered by
+    \param paintingPixelValue
+    adding the contour with the specified paintingPixelValue.
+    \pre sliceImage points to a valid instance
+    \pre projectedContour points to a valid instance
+    */
+    static void FillContourInSlice2(const ContourModel* projectedContour,
+      TimeStepType contourTimeStep,
+      Image* sliceImage,
+      int paintingPixelValue = 1);
 
     /**
     \brief Fills the paintingPixelValue into every pixel of resultImage as indicated by filledImage.
@@ -93,7 +122,9 @@ namespace mitk
     \param paintingPixelValue the pixelvalue/label that should be used in the result image when filling.
     \param fillForegroundThreshold The threshold value that decides if a pixel in the filled image counts
     as foreground (>=fillForegroundThreshold) or not.
+    \deprecated Ths function is deprecated. Use TransferLabelContent() instead.
     */
+    [[deprecated]]
     static void FillSliceInSlice(vtkSmartPointer<vtkImageData> filledImage,
                                  vtkSmartPointer<vtkImageData> resultImage,
                                  const Image* image,

@@ -405,26 +405,12 @@ int mitkImageTest(int argc, char *argv[])
   MITK_TEST_CONDITION_REQUIRED(mitk::Equal(origin2, vtkoriginAsMitkPoint), "");
 
   MITK_TEST_OUTPUT(<< " Testing if vtkOrigin is (0, 0, 0). This behaviour is due to historical development of MITK. "
-                      "Aslo see bug 5050!");
+                      "Also see bug 5050!");
   vtkImageData *vtkImage = imgMem->GetVtkImageData();
   auto vtkOrigin = vtkImage->GetOrigin();
   MITK_TEST_CONDITION_REQUIRED(mitk::Equal(vtkOrigin[0], 0), "testing vtkOrigin[0] to be 0");
   MITK_TEST_CONDITION_REQUIRED(mitk::Equal(vtkOrigin[1], 0), "testing vtkOrigin[1] to be 0");
   MITK_TEST_CONDITION_REQUIRED(mitk::Equal(vtkOrigin[2], 0), "testing vtkOrigin[2] to be 0");
-
-  // TODO test the following initializers on channel-incorporation
-  //  void mitk::Image::Initialize(const mitk::PixelType& type, unsigned int dimension, unsigned int *dimensions,
-  //  unsigned int channels)
-  //  void mitk::Image::Initialize(const mitk::PixelType& type, int sDim, const mitk::PlaneGeometry& geometry2d, bool
-  //  flipped, unsigned int channels, int tDim )
-  //  void mitk::Image::Initialize(const mitk::Image* image)
-  //  void mitk::Image::Initialize(const mitkIpPicDescriptor* pic, int channels, int tDim, int sDim)
-
-  // mitk::Image::Pointer vecImg = mitk::Image::New();
-  // vecImg->Initialize(PixelType(typeid(float), 6, itk::ImageIOBase::SYMMETRICSECONDRANKTENSOR),
-  // *imgMem->GetGeometry(), 2 /* #channels */, 0 /*tDim*/, false /*shiftBoundingBoxMinimumToZero*/ );
-  // vecImg->Initialize(PixelType(typeid(itk::Vector<float,6>)), *imgMem->GetGeometry(), 2 /* #channels */, 0 /*tDim*/,
-  // false /*shiftBoundingBoxMinimumToZero*/ );
 
   // testing access by index coordinates and by world coordinates
 

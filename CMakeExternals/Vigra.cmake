@@ -21,7 +21,14 @@ if(MITK_USE_Vigra)
   # Hence, we exclude them here.
   set(mac_additional_cmake_args)
   if(APPLE)
-    set(mac_additional_cmake_args -DJPEG_INCLUDE_DIR= -DJPEG_LIBRARY= -DTIFF_INCLUDE_DIR= -DTIFF_LIBRARY= -DPNG_LIBRARY_RELEASE= -DPNG_PNG_INCLUDE_DIR= )
+    set(mac_additional_cmake_args
+      -DJPEG_INCLUDE_DIR=
+      -DJPEG_LIBRARY=
+      -DTIFF_INCLUDE_DIR=
+      -DTIFF_LIBRARY=
+      -DPNG_LIBRARY_RELEASE=
+      -DPNG_PNG_INCLUDE_DIR=
+    )
   endif()
 
   if(NOT DEFINED Vigra_DIR)
@@ -34,9 +41,8 @@ if(MITK_USE_Vigra)
     endif()
 
     ExternalProject_Add(${proj}
-       URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/vigra-1.10.0-src.tar.gz
-       URL_MD5 4f963f0be4fcb8b06271c2aa40baa9be
-       PATCH_COMMAND ${PATCH_COMMAND} -N -p1 -i ${CMAKE_CURRENT_LIST_DIR}/Vigra.patch
+       GIT_REPOSITORY https://github.com/MITK/vigra.git
+       GIT_TAG Version-1-10-0-patched
        CMAKE_GENERATOR ${gen}
        CMAKE_GENERATOR_PLATFORM ${gen_platform}
        CMAKE_ARGS

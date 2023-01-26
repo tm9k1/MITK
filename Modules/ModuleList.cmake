@@ -60,7 +60,6 @@ set(MITK_MODULES
   XNAT
   TubeGraph
   BoundingShape
-  RenderWindowManager
   RenderWindowManagerUI
   SemanticRelations
   SemanticRelationsUI
@@ -75,7 +74,3 @@ set(MITK_MODULES
   RESTService
   DICOMweb
 )
-
-if(MITK_ENABLE_PIC_READER)
-  list(APPEND MITK_MODULES IpPicSupportIO)
-endif()

@@ -22,17 +22,17 @@ namespace mitk
 {
   /**
   \brief ContourModel is a structure of linked vertices defining a contour in 3D space.
-  The vertices are stored in a mitk::ContourElement is stored for each timestep.
+  The vertices are stored in a mitk::ContourElement for each timestep.
   The contour line segments are implicitly defined by the given linked vertices.
-  By default two control points are are linked by a straight line.It is possible to add
-  vertices at front and end of the contour and to iterate in both directions.
+  By default two control points are linked by a straight line. It is possible to add
+  vertices at the front and end of the contour and to iterate in both directions.
 
   Points are specified containing coordinates and additional (data) information,
   see mitk::ContourElement.
-  For accessing a specific vertex either an index or a position in 3D Space can be used.
+  For accessing a specific vertex either an index or a position in 3D space can be used.
   The vertices are best accessed by using a VertexIterator.
   Interaction with the contour is thus available without any mitk interactor class using the
-  api of ContourModel. It is possible to shift single vertices also as shifting the whole
+  api of ContourModel. It is possible to shift single vertices as well as shifting the whole
   contour.
 
   A contour can be either open like a single curved line segment or
@@ -134,7 +134,7 @@ namespace mitk
         the contour of the passed source model at the sourceTimeStep.
      @pre soureModel must point to a valid instance
      @pre sourceTimePoint must be valid
-     @note Updateing a vertex to a timestep which exceeds the timebounds of the contour
+     @note Updating a vertex to a timestep which exceeds the timebounds of the contour
       will not be added, the TimeGeometry will not be expanded.
     */
     void UpdateContour(const ContourModel* sourceModel, TimeStepType destinationTimeStep, TimeStepType sourceTimeStep);
@@ -254,6 +254,18 @@ namespace mitk
     */
     virtual const VertexType *GetVertexAt(int index, TimeStepType timestep = 0) const;
 
+    const VertexType *GetVertexAt(mitk::Point3D &point, float eps, TimeStepType timestep) const;
+
+    /** Returns the next control vertex to the approximate nearest vertex of a given position in 3D space
+     * If the timestep is invalid a nullptr will be returned.
+     */
+    virtual const VertexType *GetNextControlVertexAt(mitk::Point3D &point, float eps, TimeStepType timestep) const;
+
+    /** Returns the previous control vertex to the approximate nearest vertex of a given position in 3D space
+     * If the timestep is invalid a nullptr will be returned.
+     */
+    virtual const VertexType *GetPreviousControlVertexAt(mitk::Point3D &point, float eps, TimeStepType timestep) const;
+
     /** \brief Remove a vertex at given timestep within the container.
 
     \return index of vertex. -1 if not found.
@@ -266,15 +278,46 @@ namespace mitk
 
     /** \brief Check if mouse cursor is near the contour.
     */
-    virtual bool IsNearContour(Point3D &point, float eps, TimeStepType timestep);
+    bool IsNearContour(Point3D &point, float eps, TimeStepType timestep) const;
+
+    /** Function that searches for the line segment of the contour that is closest to the passed point
+    and close enough (distance between point and line segment <= eps). If such an line segment exist,
+    the starting vertex and closing vertex of the found segment are passed back.
+    @return True indicates that a line segment was found. False indicates that no segment of the contour
+    is close enough to the passed point.
+    @remark previousVertex and nextVertex are only valid if return is true.*/
+    bool GetLineSegmentForPoint(Point3D &point,
+                            float eps,
+                            TimeStepType timestep,
+                            mitk::ContourElement::VertexType *previousVertex = nullptr,
+                            mitk::ContourElement::VertexType *nextVertex = nullptr);
+
+    /**Overloaded version that returns additional information (start and end vertix of the line
+    closest to the passed point and the closest point on the contour).
+    @remark segmentStart, segmentStop and closestContourPoint are only valid if the function returns true.
+    */
+    bool GetLineSegmentForPoint(const mitk::Point3D& point,
+      float eps, TimeStepType timestep, ContourElement::VertexSizeType& segmentStartIndex,
+      ContourElement::VertexSizeType& segmentEndIndex, mitk::Point3D& closestContourPoint,
+      bool findClosest = true) const;
 
     /** \brief Mark a vertex at an index in the container as selected.
-    */
+     */
     bool SelectVertexAt(int index, TimeStepType timestep = 0);
 
     /** \brief Mark a vertex at an index in the container as control point.
     */
     bool SetControlVertexAt(int index, TimeStepType timestep = 0);
+
+    /** \brief Mark a control vertex at a given position in 3D space.
+
+    \param point - query point in 3D space
+    \param eps - radius for nearest neighbour search (error bound).
+    \param timestep - search at this timestep
+
+    @return true = vertex found;  false = no vertex found
+    */
+    bool SelectControlVertexAt(Point3D &point, float eps, TimeStepType timestep = 0);
 
     /** \brief Mark a vertex at a given position in 3D space.
 
@@ -285,6 +328,7 @@ namespace mitk
     @return true = vertex found;  false = no vertex found
     */
     bool SelectVertexAt(Point3D &point, float eps, TimeStepType timestep = 0);
+
     /*
         \pararm point - query point in 3D space
         \pararm eps - radius for nearest neighbour search (error bound).
@@ -344,6 +388,14 @@ namespace mitk
     Note: No data will be copied.
     */
     void Initialize(const ContourModel &other);
+
+    /** \brief Returns a list pointing to all vertices that are indicated to be control points.
+    */
+    VertexListType GetControlVertices(TimeStepType timestep);
+
+    /** \brief Returns the container of the vertices.
+     */
+    VertexListType GetVertexList(TimeStepType timestep);
 
     /*++++++++++++++++++ method inherit from base data +++++++++++++++++++++++++++*/
     /**
@@ -426,12 +478,12 @@ namespace mitk
     bool m_UpdateBoundingBox;
   };
 
-  itkEventMacro(ContourModelEvent, itk::AnyEvent);
-  itkEventMacro(ContourModelShiftEvent, ContourModelEvent);
-  itkEventMacro(ContourModelSizeChangeEvent, ContourModelEvent);
-  itkEventMacro(ContourModelAddEvent, ContourModelSizeChangeEvent);
-  itkEventMacro(ContourModelRemoveEvent, ContourModelSizeChangeEvent);
-  itkEventMacro(ContourModelExpandTimeBoundsEvent, ContourModelEvent);
-  itkEventMacro(ContourModelClosedEvent, ContourModelEvent);
+  itkEventMacroDeclaration(ContourModelEvent, itk::AnyEvent);
+  itkEventMacroDeclaration(ContourModelShiftEvent, ContourModelEvent);
+  itkEventMacroDeclaration(ContourModelSizeChangeEvent, ContourModelEvent);
+  itkEventMacroDeclaration(ContourModelAddEvent, ContourModelSizeChangeEvent);
+  itkEventMacroDeclaration(ContourModelRemoveEvent, ContourModelSizeChangeEvent);
+  itkEventMacroDeclaration(ContourModelExpandTimeBoundsEvent, ContourModelEvent);
+  itkEventMacroDeclaration(ContourModelClosedEvent, ContourModelEvent);
 }
 #endif

@@ -16,10 +16,9 @@ found in the LICENSE file.
 // mitk core
 #include <mitkRenderingManager.h>
 
-// berry
-#include <berryIPreferences.h>
-#include <berryIPreferencesService.h>
-#include <berryPlatform.h>
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
 
 // namespace that contains the concrete action
 namespace ToggleVisibilityAction
@@ -37,9 +36,9 @@ namespace ToggleVisibilityAction
       }
     }
 
-    berry::IPreferencesService* prefService = berry::Platform::GetPreferencesService();
+    auto* prefService = mitk::CoreServices::GetPreferencesService();
 
-    berry::IPreferences::Pointer preferences = prefService->GetSystemPreferences()->Node(QmitkDataNodeGlobalReinitAction::ACTION_ID);
+    auto* preferences = prefService->GetSystemPreferences()->Node(QmitkDataNodeGlobalReinitAction::ACTION_ID.toStdString());
     bool globalReinit = preferences->GetBool("Call global reinit if node visibility is changed", false);
     if (globalReinit)
     {
@@ -82,12 +81,16 @@ void QmitkDataNodeToggleVisibilityAction::InitializeAction()
 
 void QmitkDataNodeToggleVisibilityAction::OnActionTriggered(bool /*checked*/)
 {
-  if (m_WorkbenchPartSite.Expired())
+  auto workbenchPartSite = m_WorkbenchPartSite.Lock();
+
+  if (workbenchPartSite.IsNull())
   {
     return;
   }
 
-  if (m_DataStorage.IsExpired())
+  auto dataStorage = m_DataStorage.Lock();
+
+  if (dataStorage.IsNull())
   {
     return;
   }
@@ -95,5 +98,5 @@ void QmitkDataNodeToggleVisibilityAction::OnActionTriggered(bool /*checked*/)
   mitk::BaseRenderer::Pointer baseRenderer = GetBaseRenderer();
 
   auto dataNodes = GetSelectedNodes();
-  ToggleVisibilityAction::Run(m_WorkbenchPartSite.Lock(), m_DataStorage.Lock(), dataNodes, baseRenderer);
+  ToggleVisibilityAction::Run(workbenchPartSite, dataStorage, dataNodes, baseRenderer);
 }

@@ -13,6 +13,17 @@ found in the LICENSE file.
 #include "mitkLimitedLinearUndo.h"
 #include <mitkRenderingManager.h>
 
+namespace mitk
+{
+  itkEventMacroDefinition(UndoStackEvent, itk::ModifiedEvent);
+  itkEventMacroDefinition(UndoEmptyEvent, UndoStackEvent);
+  itkEventMacroDefinition(RedoEmptyEvent, UndoStackEvent);
+  itkEventMacroDefinition(UndoNotEmptyEvent, UndoStackEvent);
+  itkEventMacroDefinition(RedoNotEmptyEvent, UndoStackEvent);
+  itkEventMacroDefinition(UndoFullEvent, UndoStackEvent);
+  itkEventMacroDefinition(RedoFullEvent, UndoStackEvent);
+}
+
 mitk::LimitedLinearUndo::LimitedLinearUndo()
 : m_UndoLimit(0)
 {
@@ -73,7 +84,7 @@ bool mitk::LimitedLinearUndo::Undo(bool fine)
   {
     // undo one group event ID
     int oeid = FirstObjectEventIdOfCurrentGroup(
-      m_UndoList); // get the Object Event ID of the first item with a differnt Group ID (as seen from the end of stack)
+      m_UndoList); // get the Object Event ID of the first item with a different Group ID (as seen from the end of stack)
     return Undo(oeid);
   }
 }

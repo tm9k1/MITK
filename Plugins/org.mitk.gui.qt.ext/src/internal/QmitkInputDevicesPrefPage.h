@@ -15,7 +15,6 @@ found in the LICENSE file.
 #define QMITK_INPUTDEVICESPREFPAGE_H_
 
 #include "berryIQtPreferencePage.h"
-#include <berryIPreferences.h>
 
 #include <QHash>
 #include <QGroupBox>
@@ -80,8 +79,6 @@ protected:
   QGroupBox* m_WiiMoteModes;
   QRadioButton* m_WiiMoteHeadTracking;
   QRadioButton* m_WiiMoteSurfaceInteraction;
-
-  berry::IPreferences::Pointer m_InputDevicesPrefNode;
 
   mitk::IInputDeviceRegistry* GetInputDeviceRegistry() const;
 

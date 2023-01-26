@@ -183,7 +183,7 @@ void mitk::SlicedGeometry3D::InitializeEvenlySpaced(mitk::PlaneGeometry *geometr
   directionVector *= zSpacing;
 
   // Normally we should use the following four lines to create a copy of
-  // the transform contrained in geometry2D, because it may not be changed
+  // the transform contained in geometry2D, because it may not be changed
   // by us. But we know that SetSpacing creates a new transform without
   // changing the old (coming from geometry2D), so we can use the fifth
   // line instead. We check this at (**).
@@ -215,7 +215,7 @@ void mitk::SlicedGeometry3D::InitializeEvenlySpaced(mitk::PlaneGeometry *geometr
 }
 
 void mitk::SlicedGeometry3D::InitializePlanes(const mitk::BaseGeometry *geometry3D,
-                                              mitk::PlaneGeometry::PlaneOrientation planeorientation,
+                                              mitk::AnatomicalPlane orientation,
                                               bool top,
                                               bool frontside,
                                               bool rotated)
@@ -223,11 +223,11 @@ void mitk::SlicedGeometry3D::InitializePlanes(const mitk::BaseGeometry *geometry
   m_ReferenceGeometry = geometry3D;
 
   PlaneGeometry::Pointer planeGeometry = mitk::PlaneGeometry::New();
-  planeGeometry->InitializeStandardPlane(geometry3D, top, planeorientation, frontside, rotated);
+  planeGeometry->InitializeStandardPlane(geometry3D, top, orientation, frontside, rotated);
 
-  int worldAxis =
-      planeorientation == PlaneGeometry::Sagittal ? 0 :
-      planeorientation == PlaneGeometry::Frontal  ? 1 : 2;
+  int worldAxis = 
+    orientation == AnatomicalPlane::Sagittal ? 0 :
+    orientation == AnatomicalPlane::Coronal  ? 1 : 2;
 
   // Inspired by:
   // http://www.na-mic.org/Wiki/index.php/Coordinate_System_Conversion_Between_ITK_and_Slicer3
@@ -720,7 +720,7 @@ void mitk::SlicedGeometry3D::ExecuteOperation(Operation *operation)
         PlaneGeometry::Pointer planeGeometry = m_PlaneGeometries[0];
 
         // Need a PlaneGeometry, a PlaneOperation and a reference frame to
-        // carry out the re-orientation. If not all avaialble, stop here
+        // carry out the re-orientation. If not all available, stop here
         if (!m_ReferenceGeometry ||
             (!planeGeometry || dynamic_cast<AbstractTransformGeometry *>(planeGeometry.GetPointer())) || !planeOp)
         {
@@ -818,7 +818,7 @@ void mitk::SlicedGeometry3D::ExecuteOperation(Operation *operation)
             rotationAxis = newNormal;
           }
 
-          // Perfom Rotation
+          // Perform Rotation
           mitk::RotationOperation op(mitk::OpROTATE, center, rotationAxis, rotationAngle);
           planeGeometry->ExecuteOperation(&op);
 

@@ -25,8 +25,6 @@ set(enabled_modules
   SegmentationUI
   PlanarFigure
   Annotation
-  IpSegmentation
-  IpFunc
   SurfaceInterpolation
   GraphAlgorithms
   ImageExtraction
@@ -46,10 +44,10 @@ org.mitk.gui.common
 org.mitk.gui.qt.application
 org.mitk.gui.qt.common
 org.mitk.gui.qt.datamanager
+org.mitk.gui.qt.ext
 org.mitk.gui.qt.flow.segmentation
 org.mitk.gui.qt.flowapplication
 org.mitk.gui.qt.imagenavigator
-org.mitk.gui.qt.multilabelsegmentation
 org.mitk.gui.qt.properties
 org.mitk.gui.qt.segmentation
 org.mitk.gui.qt.stdmultiwidgeteditor

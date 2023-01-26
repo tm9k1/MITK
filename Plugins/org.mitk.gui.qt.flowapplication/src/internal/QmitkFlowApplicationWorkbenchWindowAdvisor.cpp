@@ -31,7 +31,6 @@ found in the LICENSE file.
 #include <berryIActionBarConfigurer.h>
 #include <berryIWorkbenchWindow.h>
 #include <berryIWorkbenchPage.h>
-#include <berryIPreferencesService.h>
 #include <berryIPerspectiveRegistry.h>
 #include <berryIPerspectiveDescriptor.h>
 #include <berryIProduct.h>
@@ -39,7 +38,6 @@ found in the LICENSE file.
 #include <berryQtPreferences.h>
 #include <berryQtStyleManager.h>
 #include <berryWorkbenchPlugin.h>
-#include <berryIPreferences.h>
 
 #include <internal/berryQtShowViewAction.h>
 #include <internal/berryQtOpenPerspectiveAction.h>
@@ -56,13 +54,15 @@ found in the LICENSE file.
 #include "QmitkExtFileSaveProjectAction.h"
 
 #include <itkConfigure.h>
-#include <vtkConfigure.h>
 #include <mitkVersion.h>
 #include <mitkIDataStorageService.h>
 #include <mitkIDataStorageReference.h>
 #include <mitkDataStorageEditorInput.h>
 #include <mitkWorkbenchUtil.h>
 #include <vtkVersionMacros.h>
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
 
 // UGLYYY
 #include "QmitkFlowApplicationWorkbenchWindowAdvisorHack.h"
@@ -119,8 +119,9 @@ public:
 
   void PartHidden(const berry::IWorkbenchPartReference::Pointer& ref) override
   {
-    if (!windowAdvisor->lastActiveEditor.Expired() &&
-      ref->GetPart(false) == windowAdvisor->lastActiveEditor.Lock())
+    auto lockedLastActiveEditor = windowAdvisor->lastActiveEditor.Lock();
+
+    if (lockedLastActiveEditor.IsNotNull() && ref->GetPart(false) == lockedLastActiveEditor)
     {
       windowAdvisor->UpdateTitle(true);
     }
@@ -128,8 +129,9 @@ public:
 
   void PartVisible(const berry::IWorkbenchPartReference::Pointer& ref) override
   {
-    if (!windowAdvisor->lastActiveEditor.Expired() &&
-      ref->GetPart(false) == windowAdvisor->lastActiveEditor.Lock())
+    auto lockedLastActiveEditor = windowAdvisor->lastActiveEditor.Lock();
+
+    if (lockedLastActiveEditor.IsNotNull() && ref->GetPart(false) == lockedLastActiveEditor)
     {
       windowAdvisor->UpdateTitle(false);
     }
@@ -330,7 +332,7 @@ QmitkFlowApplicationWorkbenchWindowAdvisor::QmitkFlowApplicationWorkbenchWindowA
   , dropTargetListener(new QmitkDefaultDropTargetListener)
 {
   productName = QCoreApplication::applicationName();
-  viewExcludeList.push_back("org.mitk.views.viewnavigatorview");
+  viewExcludeList.push_back("org.mitk.views.viewnavigator");
 }
 
 QmitkFlowApplicationWorkbenchWindowAdvisor::~QmitkFlowApplicationWorkbenchWindowAdvisor()
@@ -452,7 +454,7 @@ void QmitkFlowApplicationWorkbenchWindowAdvisor::PostWindowCreate()
       continue;
     if ((*iter)->GetId() == "org.mitk.views.imagenavigator")
       continue;
-    if ((*iter)->GetId() == "org.mitk.views.viewnavigatorview")
+    if ((*iter)->GetId() == "org.mitk.views.viewnavigator")
       continue;
 
     std::pair<QString, berry::IViewDescriptor::Pointer> p((*iter)->GetLabel(), (*iter));
@@ -595,8 +597,8 @@ void QmitkFlowApplicationWorkbenchWindowAdvisor::PostWindowCreate()
 
   if (showViewToolbar)
   {
-    auto prefService = berry::WorkbenchPlugin::GetDefault()->GetPreferencesService();
-    berry::IPreferences::Pointer stylePrefs = prefService->GetSystemPreferences()->Node(berry::QtPreferences::QT_STYLES_NODE);
+    auto* prefService = mitk::CoreServices::GetPreferencesService();
+    auto* stylePrefs = prefService->GetSystemPreferences()->Node(berry::QtPreferences::QT_STYLES_NODE);
     bool showCategoryNames = stylePrefs->GetBool(berry::QtPreferences::QT_SHOW_TOOLBAR_CATEGORY_NAMES, true);
 
     // Order view descriptors by category
@@ -868,9 +870,11 @@ void QmitkFlowApplicationWorkbenchWindowAdvisor::UpdateTitle(bool editorHidden)
     return;
   }
 
-  if (!lastActiveEditor.Expired())
+  auto lockedLastActiveEditor = lastActiveEditor.Lock();
+
+  if (lockedLastActiveEditor.IsNotNull())
   {
-    lastActiveEditor.Lock()->RemovePropertyListener(editorPropertyListener.data());
+    lockedLastActiveEditor->RemovePropertyListener(editorPropertyListener.data());
   }
 
   lastActiveEditor = activeEditor;
@@ -890,9 +894,11 @@ void QmitkFlowApplicationWorkbenchWindowAdvisor::PropertyChange(const berry::Obj
 {
   if (propId == berry::IWorkbenchPartConstants::PROP_TITLE)
   {
-    if (!lastActiveEditor.Expired())
+    auto lockedLastActiveEditor = lastActiveEditor.Lock();
+
+    if (lockedLastActiveEditor.IsNotNull())
     {
-      QString newTitle = lastActiveEditor.Lock()->GetPartName();
+      QString newTitle = lockedLastActiveEditor->GetPartName();
       if (lastEditorTitle != newTitle)
       {
         RecomputeTitle();

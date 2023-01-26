@@ -247,13 +247,13 @@ namespace mitk
       auto timeBounds = timeGeometry->GetTimeBounds(pos);
 
       ///////////////////////////////////////
-      // Workarround T27883. See https://phabricator.mitk.org/T27883#219473 for more details.
-      // This workarround should be removed as soon as T28262 is solved!
+      // Workaround T27883. See https://phabricator.mitk.org/T27883#219473 for more details.
+      // This workaround should be removed as soon as T28262 is solved!
       if (pos + 1 == maxTimePoints && timeBounds[0]==timeBounds[1])
       {
         timeBounds[1] = timeBounds[0] + 1.;
       }
-      // End of workarround for T27883
+      // End of workaround for T27883
       //////////////////////////////////////
 
       stream << " " << timeBounds[1];
@@ -605,9 +605,9 @@ namespace mitk
       // Set the necessary information for imageIO
       m_ImageIO->SetNumberOfDimensions(dimension);
       m_ImageIO->SetPixelType(pixelType.GetPixelType());
-      m_ImageIO->SetComponentType(pixelType.GetComponentType() < PixelComponentUserType ?
-                                    static_cast<itk::ImageIOBase::IOComponentType>(pixelType.GetComponentType()) :
-                                    itk::ImageIOBase::UNKNOWNCOMPONENTTYPE);
+      m_ImageIO->SetComponentType(static_cast<int>(pixelType.GetComponentType()) < PixelComponentUserType
+                                    ? pixelType.GetComponentType()
+                                    : itk::IOComponentEnum::UNKNOWNCOMPONENTTYPE);
       m_ImageIO->SetNumberOfComponents(pixelType.GetNumberOfComponents());
 
       itk::ImageIORegion ioRegion(dimension);
@@ -618,8 +618,8 @@ namespace mitk
         m_ImageIO->SetSpacing(i, spacing4D[i]);
         m_ImageIO->SetOrigin(i, origin4D[i]);
 
-        mitk::Vector3D mitkDirection;
-        mitkDirection.SetVnlVector(geometry->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(i));
+        mitk::Vector3D mitkDirection(0.0);
+        mitkDirection.SetVnlVector(geometry->GetIndexToWorldTransform()->GetMatrix().GetVnlMatrix().get_column(i).as_ref());
         itk::Vector<double, 4u> direction4D;
         direction4D[0] = mitkDirection[0];
         direction4D[1] = mitkDirection[1];
@@ -688,7 +688,7 @@ namespace mitk
         }
         catch (...)
         {
-          MITK_ERROR << "Unkown error when serializing content of property. This often indicates the use of an out dated reader. Property will not be stored. Skipped property: " << property.first;
+          MITK_ERROR << "Unknown error when serializing content of property. This often indicates the use of an out dated reader. Property will not be stored. Skipped property: " << property.first;
         }
 
         if (value == mitk::BaseProperty::VALUE_CANNOT_BE_CONVERTED_TO_STRING)
@@ -719,6 +719,16 @@ namespace mitk
     // Check if the image dimension is supported
     const auto *image = dynamic_cast<const Image *>(this->GetInput());
     if (image == nullptr)
+    {
+      // We cannot write a null object, DUH!
+      return IFileWriter::Unsupported;
+    }
+
+    //Fix to ensure T29391. Can be removed as soon as T28524 is solved
+    //and the new MultiLabelSegmentation class is in place, as
+    //segmentations won't be confused with simple images anymore.
+    std::string className = this->GetInput()->GetNameOfClass();
+    if (className == "LabelSetImage")
     {
       // We cannot write a null object, DUH!
       return IFileWriter::Unsupported;

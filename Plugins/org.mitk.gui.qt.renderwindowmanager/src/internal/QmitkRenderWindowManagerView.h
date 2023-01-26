@@ -45,7 +45,7 @@ public:
 
 protected:
 
-  void SetFocus() override;
+  void SetFocus() override {}
 
   void CreateQtPartControl(QWidget* parent) override;
 
@@ -67,7 +67,7 @@ private:
   QWidget* m_Parent;
   Ui::QmitkRenderWindowManagerControls m_Controls;
 
-  mitk::IRenderWindowPart* m_RenderWindowPart;
+  mitk::IRenderWindowPart* m_RenderWindowPart = nullptr;
 
   QmitkRenderWindowDataStorageInspector* m_RenderWindowInspector;
   QAbstractItemView* m_InspectorView;

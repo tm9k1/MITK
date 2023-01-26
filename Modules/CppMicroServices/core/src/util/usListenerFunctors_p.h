@@ -9,7 +9,7 @@
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
@@ -52,8 +52,7 @@ US_BEGIN_NAMESPACE
   US_MODULE_LISTENER_FUNCTOR ModuleListenerMemberFunctor(X* x, void (X::*memFn)(const US_PREPEND_NAMESPACE(ModuleEvent)))
   { return std::bind(std::mem_fn(memFn), x, std::placeholders::_1); }
 
-  struct ModuleListenerCompare : std::binary_function<std::pair<US_MODULE_LISTENER_FUNCTOR, void*>,
-                                                      std::pair<US_MODULE_LISTENER_FUNCTOR, void*>, bool>
+  struct ModuleListenerCompare
   {
     bool operator()(const std::pair<US_MODULE_LISTENER_FUNCTOR, void*>& p1,
                     const std::pair<US_MODULE_LISTENER_FUNCTOR, void*>& p2) const
@@ -67,7 +66,7 @@ US_BEGIN_NAMESPACE
   US_SERVICE_LISTENER_FUNCTOR ServiceListenerMemberFunctor(X* x, void (X::*memFn)(const US_PREPEND_NAMESPACE(ServiceEvent)))
   { return std::bind(std::mem_fn(memFn), x, std::placeholders::_1); }
 
-  struct ServiceListenerCompare : std::binary_function<US_SERVICE_LISTENER_FUNCTOR, US_SERVICE_LISTENER_FUNCTOR, bool>
+  struct ServiceListenerCompare
   {
     bool operator()(const US_SERVICE_LISTENER_FUNCTOR& f1,
                     const US_SERVICE_LISTENER_FUNCTOR& f2) const

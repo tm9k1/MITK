@@ -1,53 +1,54 @@
 set(SRC_CPP_FILES
   QmitkSegmentationPreferencePage.cpp
+  QmitkNewSegmentationDialog.cpp
+  QmitkLabelSetWidget.cpp
 )
 
 set(INTERNAL_CPP_FILES
   mitkPluginActivator.cpp
   QmitkSegmentationView.cpp
-  QmitkThresholdAction.cpp
-  QmitkCreatePolygonModelAction.cpp
-  #QmitkStatisticsAction.cpp
+  QmitkSegmentationUtilitiesView.cpp
   QmitkAutocropAction.cpp
   QmitkAutocropLabelSetImageAction.cpp
-  Common/QmitkDataSelectionWidget.cpp
-  SegmentationUtilities/QmitkSegmentationUtilitiesView.cpp
-  SegmentationUtilities/QmitkSegmentationUtilityWidget.cpp
-  SegmentationUtilities/BooleanOperations/QmitkBooleanOperationsWidget.cpp
-  SegmentationUtilities/ImageMasking/QmitkImageMaskingWidget.cpp
-  SegmentationUtilities/ContourModelToImage/QmitkContourModelToImageWidget.cpp
-  SegmentationUtilities/MorphologicalOperations/QmitkMorphologicalOperationsWidget.cpp
-  SegmentationUtilities/SurfaceToImage/QmitkSurfaceToImageWidget.cpp
+  QmitkCreatePolygonModelAction.cpp
+  QmitkLoadMultiLabelPresetAction.cpp
+  QmitkSaveMultiLabelPresetAction.cpp
+  QmitkConvertSurfaceToLabelAction.cpp
+  QmitkConvertMaskToLabelAction.cpp
+  QmitkConvertToMultiLabelSegmentationAction.cpp
+  QmitkCreateMultiLabelSegmentationAction.cpp
+  Common/QmitkLabelsWidget.cpp
+  Common/QmitkLayersWidget.cpp
 )
 
 set(UI_FILES
-  src/internal/QmitkSegmentationControls.ui
-  src/internal/Common/QmitkDataSelectionWidgetControls.ui
-  src/internal/SegmentationUtilities/QmitkSegmentationUtilitiesViewControls.ui
-  src/internal/SegmentationUtilities/BooleanOperations/QmitkBooleanOperationsWidgetControls.ui
-  src/internal/SegmentationUtilities/ImageMasking/QmitkImageMaskingWidgetControls.ui
-  src/internal/SegmentationUtilities/ContourModelToImage/QmitkContourModelToImageWidgetControls.ui
-  src/internal/SegmentationUtilities/MorphologicalOperations/QmitkMorphologicalOperationsWidgetControls.ui
-  src/internal/SegmentationUtilities/SurfaceToImage/QmitkSurfaceToImageWidgetControls.ui
+  src/QmitkSegmentationPreferencePageControls.ui
+  src/QmitkNewSegmentationDialog.ui
+  src/QmitkLabelSetWidgetControls.ui
+  src/internal/QmitkSegmentationViewControls.ui
+  src/internal/QmitkSegmentationUtilitiesViewControls.ui
+  src/internal/Common/QmitkLabelsWidgetControls.ui
+  src/internal/Common/QmitkLayersWidgetControls.ui
 )
 
 set(MOC_H_FILES
   src/QmitkSegmentationPreferencePage.h
+  src/QmitkNewSegmentationDialog.h
+  src/QmitkLabelSetWidget.h
   src/internal/mitkPluginActivator.h
   src/internal/QmitkSegmentationView.h
-  src/internal/QmitkThresholdAction.h
-  src/internal/QmitkCreatePolygonModelAction.h
-  #src/internal/QmitkStatisticsAction.h
+  src/internal/QmitkSegmentationUtilitiesView.h
   src/internal/QmitkAutocropAction.h
   src/internal/QmitkAutocropLabelSetImageAction.h
-  src/internal/Common/QmitkDataSelectionWidget.h
-  src/internal/SegmentationUtilities/QmitkSegmentationUtilitiesView.h
-  src/internal/SegmentationUtilities/QmitkSegmentationUtilityWidget.h
-  src/internal/SegmentationUtilities/BooleanOperations/QmitkBooleanOperationsWidget.h
-  src/internal/SegmentationUtilities/ImageMasking/QmitkImageMaskingWidget.h
-  src/internal/SegmentationUtilities/ContourModelToImage/QmitkContourModelToImageWidget.h
-  src/internal/SegmentationUtilities/MorphologicalOperations/QmitkMorphologicalOperationsWidget.h
-  src/internal/SegmentationUtilities/SurfaceToImage/QmitkSurfaceToImageWidget.h
+  src/internal/QmitkCreatePolygonModelAction.h
+  src/internal/QmitkLoadMultiLabelPresetAction.h
+  src/internal/QmitkSaveMultiLabelPresetAction.h
+  src/internal/QmitkConvertSurfaceToLabelAction.h
+  src/internal/QmitkConvertMaskToLabelAction.h
+  src/internal/QmitkConvertToMultiLabelSegmentationAction.h
+  src/internal/QmitkCreateMultiLabelSegmentationAction.h
+  src/internal/Common/QmitkLabelsWidget.h
+  src/internal/Common/QmitkLayersWidget.h
 )
 
 set(CACHED_RESOURCE_FILES
@@ -59,8 +60,6 @@ set(CACHED_RESOURCE_FILES
 set(QRC_FILES
   resources/segmentation.qrc
   resources/SegmentationUtilities.qrc
-  resources/BooleanOperationsWidget.qrc
-  resources/MorphologicalOperationsWidget.qrc
 )
 
 set(CPP_FILES)

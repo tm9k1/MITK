@@ -25,7 +25,7 @@ found in the LICENSE file.
 mitk::ContourModelLiveWireInteractor::ContourModelLiveWireInteractor() : ContourModelInteractor()
 {
   m_LiveWireFilter = mitk::ImageLiveWireContourModelFilter::New();
-
+  m_LiveWireFilter->SetUseCostFunction(true);
   m_NextActiveVertexDown.Fill(0);
   m_NextActiveVertexUp.Fill(0);
 }
@@ -41,96 +41,40 @@ void mitk::ContourModelLiveWireInteractor::ConnectActionsAndFunctions()
 
   CONNECT_FUNCTION("movePoint", OnMovePoint);
   CONNECT_FUNCTION("deletePoint", OnDeletePoint);
+  CONNECT_FUNCTION("addPoint", OnAddPoint)
   CONNECT_FUNCTION("finish", OnFinishEditing);
 }
 
 bool mitk::ContourModelLiveWireInteractor::OnCheckPointClick(const InteractionEvent *interactionEvent)
 {
-  const auto *positionEvent = dynamic_cast<const InteractionPositionEvent *>(interactionEvent);
+  auto isVertexSelected = Superclass::OnCheckPointClick(interactionEvent);
 
-  if (!positionEvent)
-    return false;
-
-  const auto timeStep = interactionEvent->GetSender()->GetTimeStep(GetDataNode()->GetData());
-
-  auto *contour = dynamic_cast<mitk::ContourModel *>(this->GetDataNode()->GetData());
-  if (contour == nullptr)
+  if (isVertexSelected)
   {
-    MITK_ERROR << "Invalid Contour";
-    return false;
-  }
+    auto* contour = dynamic_cast<mitk::ContourModel*>(this->GetDataNode()->GetData());
+    const auto* positionEvent =
+      dynamic_cast<const mitk::InteractionPositionEvent*>(interactionEvent);
+    mitk::Point3D click = positionEvent->GetPositionInWorld();
+    const auto timeStep = interactionEvent->GetSender()->GetTimeStep(GetDataNode()->GetData());
 
-  contour->Deselect();
-
-  // Check distance to any vertex.
-  // Transition YES if click close to a vertex
-  mitk::Point3D click = positionEvent->GetPositionInWorld();
-
-  if (contour->SelectVertexAt(click, 1.5, timeStep))
-  {
-    contour->SetSelectedVertexAsControlPoint(false);
-    m_ContourLeft = mitk::ContourModel::New();
-    // get coordinates of next active vertex downwards from selected vertex
-    int downIndex = this->SplitContourFromSelectedVertex(contour, m_ContourLeft, false, timeStep);
-
-    m_NextActiveVertexDownIter = contour->IteratorBegin() + downIndex;
-    m_NextActiveVertexDown = (*m_NextActiveVertexDownIter)->Coordinates;
-
-    m_ContourRight = mitk::ContourModel::New();
-
-    // get coordinates of next active vertex upwards from selected vertex
-    int upIndex = this->SplitContourFromSelectedVertex(contour, m_ContourRight, true, timeStep);
-
-    m_NextActiveVertexUpIter = contour->IteratorBegin() + upIndex;
-    m_NextActiveVertexUp = (*m_NextActiveVertexUpIter)->Coordinates;
+    auto controlVertices = contour->GetControlVertices(timeStep);
+    const mitk::ContourModel::VertexType* nextPoint = contour->GetNextControlVertexAt(click, mitk::ContourModelLiveWireInteractor::eps, timeStep);
+    const mitk::ContourModel::VertexType* previousPoint = contour->GetPreviousControlVertexAt(click, mitk::ContourModelLiveWireInteractor::eps, timeStep);
+    this->SplitContourFromSelectedVertex(contour, nextPoint, previousPoint, timeStep);
+    m_NextActiveVertexUp = nextPoint->Coordinates;
+    m_NextActiveVertexDown = previousPoint->Coordinates;
 
     // clear previous void positions
     this->m_LiveWireFilter->ClearRepulsivePoints();
 
-    // set the current contour as void positions in the cost map
-    // start with down side
-    auto iter = contour->IteratorBegin(timeStep);
-    for (; iter != m_NextActiveVertexDownIter; iter++)
-    {
-      itk::Index<2> idx;
-      this->m_WorkingSlice->GetGeometry()->WorldToIndex((*iter)->Coordinates, idx);
-      this->m_LiveWireFilter->AddRepulsivePoint(idx);
-    }
-
-    // continue with upper side
-    iter = m_NextActiveVertexUpIter + 1;
-    for (; iter != contour->IteratorEnd(timeStep); iter++)
-    {
-      itk::Index<2> idx;
-      this->m_WorkingSlice->GetGeometry()->WorldToIndex((*iter)->Coordinates, idx);
-      this->m_LiveWireFilter->AddRepulsivePoint(idx);
-    }
+    // all points in lower and upper part should be marked as repulsive points to not be changed
+    this->SetRepulsivePoints(previousPoint, m_ContourLeft, timeStep);
+    this->SetRepulsivePoints(nextPoint, m_ContourRight, timeStep);
 
     // clear container with void points between neighboring control points
     m_ContourBeingModified.clear();
-
-    // let us have the selected point as a control point
-    contour->SetSelectedVertexAsControlPoint(true);
-
-    // finally, return true to pass this condition
-    return true;
   }
-  else
-  {
-    // do not pass condition
-    return false;
-  }
-
-  mitk::RenderingManager::GetInstance()->RequestUpdate(positionEvent->GetSender()->GetRenderWindow());
-  return true;
-}
-
-void mitk::ContourModelLiveWireInteractor::SetEditingContourModelNode(mitk::DataNode *_arg)
-{
-  if (this->m_EditingContourNode != _arg)
-  {
-    this->m_EditingContourNode = _arg;
-  }
+  return isVertexSelected;
 }
 
 void mitk::ContourModelLiveWireInteractor::SetWorkingImage(mitk::Image *_arg)
@@ -140,6 +84,11 @@ void mitk::ContourModelLiveWireInteractor::SetWorkingImage(mitk::Image *_arg)
     this->m_WorkingSlice = _arg;
     this->m_LiveWireFilter->SetInput(this->m_WorkingSlice);
   }
+}
+
+void mitk::ContourModelLiveWireInteractor::OnAddPoint(StateMachineAction* sm, InteractionEvent* interactionEvent)
+{
+  Superclass::OnAddPoint(sm, interactionEvent);
 }
 
 void mitk::ContourModelLiveWireInteractor::OnDeletePoint(StateMachineAction *, InteractionEvent *interactionEvent)
@@ -164,7 +113,6 @@ void mitk::ContourModelLiveWireInteractor::OnDeletePoint(StateMachineAction *, I
     // recompute contour between neighbored two active control points
     this->m_LiveWireFilter->SetStartPoint(this->m_NextActiveVertexDown);
     this->m_LiveWireFilter->SetEndPoint(this->m_NextActiveVertexUp);
-    // this->m_LiveWireFilter->ClearRepulsivePoints();
     this->m_LiveWireFilter->Update();
 
     mitk::ContourModel *liveWireContour = this->m_LiveWireFilter->GetOutput();
@@ -271,12 +219,6 @@ void mitk::ContourModelLiveWireInteractor::OnMovePoint(StateMachineAction *, Int
   mitk::ContourModel::Pointer rightLiveWire = this->m_LiveWireFilter->GetOutput();
   assert(rightLiveWire);
 
-  // reject strange paths
-  if (abs(rightLiveWire->GetNumberOfVertices(timeStep) - leftLiveWire->GetNumberOfVertices(timeStep)) > 50)
-  {
-    return;
-  }
-
   if (!leftLiveWire->IsEmpty(timeStep))
     leftLiveWire->SetControlVertexAt(leftLiveWire->GetNumberOfVertices() - 1, timeStep);
 
@@ -284,8 +226,6 @@ void mitk::ContourModelLiveWireInteractor::OnMovePoint(StateMachineAction *, Int
     rightLiveWire->RemoveVertexAt(0, timeStep);
 
   editingContour->Concatenate(rightLiveWire, timeStep);
-
-  m_EditingContourNode->SetData(editingContour);
 
   mitk::ContourModel::Pointer newContour = mitk::ContourModel::New();
   newContour->Expand(contour->GetTimeSteps());
@@ -311,175 +251,81 @@ void mitk::ContourModelLiveWireInteractor::OnMovePoint(StateMachineAction *, Int
   mitk::RenderingManager::GetInstance()->RequestUpdate(positionEvent->GetSender()->GetRenderWindow());
 }
 
-bool mitk::ContourModelLiveWireInteractor::IsHovering(const InteractionEvent *interactionEvent)
+
+void mitk::ContourModelLiveWireInteractor::SplitContourFromSelectedVertex(mitk::ContourModel *srcContour,
+                                                                          const mitk::ContourModel::VertexType *nextPoint,
+                                                                          const mitk::ContourModel::VertexType *previousPoint,
+                                                                          int timeStep)
 {
-  const auto *positionEvent = dynamic_cast<const InteractionPositionEvent *>(interactionEvent);
-  if (!positionEvent)
-    return false;
+  m_ContourLeft = mitk::ContourModel::New();
+  m_ContourRight = mitk::ContourModel::New();
 
-  const auto timeStep = interactionEvent->GetSender()->GetTimeStep(GetDataNode()->GetData());
+  auto it = srcContour->IteratorBegin();
+  // part between nextPoint and end of Countour
+  bool upperPart = false;
+  // part between start of countour and previousPoint
+  bool lowerPart = true;
 
-  auto *contour = dynamic_cast<mitk::ContourModel *>(this->GetDataNode()->GetData());
-
-  mitk::Point3D currentPosition = positionEvent->GetPositionInWorld();
-
-  bool isHover = false;
-  this->GetDataNode()->GetBoolProperty("contour.hovering", isHover, positionEvent->GetSender());
-  if (contour->IsNearContour(currentPosition, 1.5, timeStep))
+  // edge cases when point right before first control vertex is selected or first control vertex is selected
+  if (nextPoint == (*it) || srcContour->GetSelectedVertex() == (*it))
   {
-    if (isHover == false)
-    {
-      this->GetDataNode()->SetBoolProperty("contour.hovering", true);
-      mitk::RenderingManager::GetInstance()->RequestUpdate(positionEvent->GetSender()->GetRenderWindow());
-    }
+    upperPart = true;
+    lowerPart = false;
+    m_ContourLeft->AddVertex(previousPoint->Coordinates, previousPoint->IsControlPoint, timeStep);
   }
-  else
+  // if first control vertex is selected, move to next point before adding vertices to m_ContourRight
+  // otherwise, second line appears when moving the vertex
+  if (srcContour->GetSelectedVertex() == (*it))
   {
-    if (isHover == true)
+    while (*it != nextPoint)
     {
-      this->GetDataNode()->SetBoolProperty("contour.hovering", false);
-      mitk::RenderingManager::GetInstance()->RequestUpdate(positionEvent->GetSender()->GetRenderWindow());
-    }
-  }
-  return false;
-}
-
-int mitk::ContourModelLiveWireInteractor::SplitContourFromSelectedVertex(mitk::ContourModel *srcContour,
-                                                                         mitk::ContourModel *destContour,
-                                                                         bool fromSelectedUpwards,
-                                                                         int timestep)
-{
-  auto end = srcContour->IteratorEnd();
-  auto begin = srcContour->IteratorBegin();
-
-  // search next active control point to left and rigth and set as start and end point for filter
-  auto itSelected = begin;
-
-  // move iterator to position
-  while ((*itSelected) != srcContour->GetSelectedVertex())
-  {
-    itSelected++;
-  }
-
-  // CASE search upwards for next control point
-  if (fromSelectedUpwards)
-  {
-    auto itUp = itSelected;
-
-    if (itUp != end)
-    {
-      itUp++; // step once up otherwise the loop breaks immediately
-    }
-
-    while (itUp != end && !((*itUp)->IsControlPoint))
-    {
-      itUp++;
-    }
-
-    auto it = itUp;
-
-    if (itSelected != begin)
-    {
-      // copy the rest of the original contour
-      while (it != end)
-      {
-        destContour->AddVertex((*it)->Coordinates, (*it)->IsControlPoint, timestep);
-        it++;
-      }
-    }
-    // else do not copy the contour
-
-    // return the offset of iterator at one before next-vertex-upwards
-    if (itUp != begin)
-    {
-      return std::distance(begin, itUp) - 1;
-    }
-    else
-    {
-      return std::distance(begin, itUp);
-    }
-  }
-  else // CASE search downwards for next control point
-  {
-    auto itDown = itSelected;
-    auto it = srcContour->IteratorBegin();
-
-    if (itSelected != begin)
-    {
-      if (itDown != begin)
-      {
-        itDown--; // step once down otherwise the the loop breaks immediately
-      }
-
-      while (itDown != begin && !((*itDown)->IsControlPoint))
-      {
-        itDown--;
-      }
-
-      if (it != end) // if not empty
-      {
-        // always add the first vertex
-        destContour->AddVertex((*it)->Coordinates, (*it)->IsControlPoint, timestep);
-        it++;
-      }
-      // copy from begin to itDown
-      while (it <= itDown)
-      {
-        destContour->AddVertex((*it)->Coordinates, (*it)->IsControlPoint, timestep);
-        it++;
-      }
-    }
-    else
-    {
-      // if selected vertex is the first element search from end of contour downwards
-      itDown = end;
-      itDown--;
-      while (!((*itDown)->IsControlPoint) && itDown != begin)
-      {
-        itDown--;
-      }
-
-      // move one forward as we don't want the first control point
       it++;
-      // move iterator to second control point
-      while ((it != end) && !((*it)->IsControlPoint))
-      {
-        it++;
-      }
-      // copy from begin to itDown
-      while (it <= itDown)
-      {
-        // copy the contour from second control point to itDown
-        destContour->AddVertex((*it)->Coordinates, (*it)->IsControlPoint, timestep);
-        it++;
-      }
     }
-    /*
-        //add vertex at itDown - it's not considered during while loop
-        if( it != begin && it != end)
-        {
-          //destContour->AddVertex( (*it)->Coordinates, (*it)->IsControlPoint, timestep);
-        }
-    */
-    // return the offset of iterator at one after next-vertex-downwards
-    if (itDown != end)
+  }
+
+  for (; it != srcContour->IteratorEnd(timeStep); it++)
+  {
+    // everything in lower part should be added to m_CountoutLeft
+    if (lowerPart)
     {
-      return std::distance(begin, itDown); // + 1;//index of next vertex
+      m_ContourLeft->AddVertex((*it)->Coordinates, (*it)->IsControlPoint, timeStep);
     }
-    else
+    // start of "restricted area" where no vertex should be added to m_CountoutLeft or m_CountoutRight
+    if (*it == previousPoint)
     {
-      return std::distance(begin, itDown) - 1;
+      lowerPart = false;
+      upperPart = false;
+    }
+    // start of upperPart
+    if (*it == nextPoint)
+    {
+      upperPart = true;
+    }
+    // everything in upper part should be added to m_CountoutRight
+    if (upperPart)
+    {
+      m_ContourRight->AddVertex((*it)->Coordinates, (*it)->IsControlPoint, timeStep);
     }
   }
 }
 
-void mitk::ContourModelLiveWireInteractor::OnFinishEditing(StateMachineAction *, InteractionEvent *interactionEvent)
+void mitk::ContourModelLiveWireInteractor::SetRepulsivePoints(const mitk::ContourModel::VertexType *pointToExclude,
+                                                              mitk::ContourModel *contour,
+                                                              int timeStep)
 {
-  const auto timeStep = interactionEvent->GetSender()->GetTimeStep(GetDataNode()->GetData());
+  auto it = contour->IteratorBegin();
+  for (; it != contour->IteratorEnd(timeStep); it++)
+  {
+    if (*it != pointToExclude)
+    {
+      itk::Index<2> idx;
+      this->m_WorkingSlice->GetGeometry()->WorldToIndex((*it)->Coordinates, idx);
+      this->m_LiveWireFilter->AddRepulsivePoint(idx);
+    }
+  }
+}
 
-  auto *editingContour = dynamic_cast<mitk::ContourModel *>(this->m_EditingContourNode->GetData());
+void mitk::ContourModelLiveWireInteractor::OnFinishEditing(StateMachineAction *, InteractionEvent *)
+{
 
-  editingContour->Clear(timeStep);
-
-  mitk::RenderingManager::GetInstance()->RequestUpdate(interactionEvent->GetSender()->GetRenderWindow());
 }

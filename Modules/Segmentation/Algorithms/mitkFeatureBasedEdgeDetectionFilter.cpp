@@ -20,7 +20,6 @@ found in the LICENSE file.
 #include <mitkImageToUnstructuredGridFilter.h>
 #include <mitkProgressBar.h>
 #include <mitkUnstructuredGrid.h>
-#include <SegmentationUtilities/MorphologicalOperations/mitkMorphologicalOperations.h>
 #include <mitkImageMaskGenerator.h>
 #include <mitkImageStatisticsConstants.h>
 
@@ -59,6 +58,7 @@ void mitk::FeatureBasedEdgeDetectionFilter::GenerateData()
   statCalc->SetInputImage(image);
 
   mitk::ImageMaskGenerator::Pointer imgMask = mitk::ImageMaskGenerator::New();
+  imgMask->SetInputImage(image);
   imgMask->SetImageMask(m_SegmentationMask);
 
   auto stats = statCalc->GetStatistics()->GetStatisticsForTimeStep(0);

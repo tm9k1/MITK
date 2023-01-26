@@ -14,6 +14,13 @@ found in the LICENSE file.
 #include "mitkDataNode.h"
 #include "mitkStateMachineState.h"
 
+namespace mitk
+{
+  itkEventMacroDefinition(DataInteractorEvent, itk::AnyEvent);
+  itkEventMacroDefinition(StartInteraction, DataInteractorEvent);
+  itkEventMacroDefinition(ResultReady, DataInteractorEvent);
+}
+
 // Predefined internal events/signals
 const std::string mitk::DataInteractor::IntDeactivateMe = "DeactivateMe";
 const std::string mitk::DataInteractor::IntLeaveWidget = "LeaveWidget";
@@ -25,10 +32,10 @@ mitk::DataInteractor::DataInteractor()
 
 mitk::DataInteractor::~DataInteractor()
 {
-  if (!m_DataNode.IsExpired())
-  {
-    auto dataNode = m_DataNode.Lock();
+  auto dataNode = m_DataNode.Lock();
 
+  if (dataNode.IsNotNull())
+  {
     if (dataNode->GetDataInteractor() == this)
       dataNode->SetDataInteractor(nullptr);
   }
@@ -44,13 +51,17 @@ void mitk::DataInteractor::SetDataNode(DataNode *dataNode)
   if (dataNode == m_DataNode)
     return;
 
-  if (!m_DataNode.IsExpired())
-    m_DataNode.Lock()->SetDataInteractor(nullptr);
+  auto lockedDataNode = m_DataNode.Lock();
+
+  if (lockedDataNode.IsNotNull())
+    lockedDataNode->SetDataInteractor(nullptr);
 
   m_DataNode = dataNode;
 
-  if (dataNode != nullptr)
-    m_DataNode.Lock()->SetDataInteractor(this);
+  lockedDataNode = m_DataNode.Lock();
+
+  if (lockedDataNode.IsNotNull())
+    lockedDataNode->SetDataInteractor(this);
 
   this->DataNodeChanged();
 }
@@ -59,8 +70,10 @@ int mitk::DataInteractor::GetLayer() const
 {
   int layer = -1;
 
-  if (!m_DataNode.IsExpired())
-    m_DataNode.Lock()->GetIntProperty("layer", layer);
+  auto dataNode = m_DataNode.Lock();
+
+  if (dataNode.IsNotNull())
+    dataNode->GetIntProperty("layer", layer);
 
   return layer;
 }

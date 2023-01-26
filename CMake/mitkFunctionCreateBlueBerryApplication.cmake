@@ -79,7 +79,7 @@ endif()
 
 set(_app_compile_flags )
 if(WIN32)
-  set(_app_compile_flags "${_app_compile_flags} -DPOCO_NO_UNWINDOWS -DWIN32_LEAN_AND_MEAN")
+  set(_app_compile_flags "${_app_compile_flags} -DWIN32_LEAN_AND_MEAN")
 endif()
 
 if(MITK_SHOW_CONSOLE_WINDOW)
@@ -108,6 +108,10 @@ set_target_properties(${_APP_NAME} PROPERTIES
 target_link_libraries(${_APP_NAME} PRIVATE org_blueberry_core_runtime ${_APP_LINK_LIBRARIES})
 if(WIN32)
   target_link_libraries(${_APP_NAME} PRIVATE ${QT_QTMAIN_LIBRARY})
+endif()
+
+if(WIN32 AND MITK_UTF8)
+  mitk_add_manifest(${_APP_NAME})
 endif()
 
 # -----------------------------------------------------------------------

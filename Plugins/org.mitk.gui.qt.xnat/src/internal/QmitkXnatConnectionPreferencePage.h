@@ -15,7 +15,6 @@ found in the LICENSE file.
 #define QMITKXNATCONNECTIONPREFERENCEPAGE_H_
 
 #include "berryIQtPreferencePage.h"
-#include <berryIPreferences.h>
 
 #include "ui_QmitkXnatConnectionPreferencePageControls.h"
 
@@ -68,8 +67,6 @@ protected:
   Ui::QmitkXnatConnectionPreferencePageControls m_Controls;
 
   QWidget* m_Control;
-
-  berry::IPreferences::WeakPtr m_XnatConnectionPreferencesNode;
 
 private:
 

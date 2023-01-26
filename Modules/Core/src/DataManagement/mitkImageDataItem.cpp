@@ -10,8 +10,7 @@ found in the LICENSE file.
 
 ============================================================================*/
 
-#include "mitkImageDataItem.h"
-#include "mitkMemoryUtilities.h"
+#include <mitkImageDataItem.h>
 #include <vtkImageData.h>
 #include <vtkPointData.h>
 
@@ -122,7 +121,7 @@ mitk::ImageDataItem::ImageDataItem(const mitk::ImageDescriptor::Pointer desc,
 
   if (m_Data == nullptr)
   {
-    m_Data = mitk::MemoryUtilities::AllocateElements<unsigned char>(m_Size);
+    m_Data = new unsigned char[m_Size];
     m_ManageMemory = true;
   }
 
@@ -157,7 +156,7 @@ mitk::ImageDataItem::ImageDataItem(const mitk::PixelType &type,
 
   if (m_Data == nullptr)
   {
-    m_Data = mitk::MemoryUtilities::AllocateElements<unsigned char>(m_Size);
+    m_Data = new unsigned char[m_Size];
     m_ManageMemory = true;
   }
 
@@ -245,43 +244,43 @@ void mitk::ImageDataItem::ConstructVtkImageData(ImageConstPointer iP) const
     inData->SetSpacing(dspacing);
   }
 
-  if (m_PixelType->GetComponentType() == itk::ImageIOBase::CHAR)
+  if (m_PixelType->GetComponentType() == itk::IOComponentEnum::CHAR)
   {
     scalars = vtkCharArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::UCHAR)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::UCHAR)
   {
     scalars = vtkUnsignedCharArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::SHORT)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::SHORT)
   {
     scalars = vtkShortArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::USHORT)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::USHORT)
   {
     scalars = vtkUnsignedShortArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::INT)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::INT)
   {
     scalars = vtkIntArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::UINT)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::UINT)
   {
     scalars = vtkUnsignedIntArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::LONG)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::LONG)
   {
     scalars = vtkLongArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::ULONG)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::ULONG)
   {
     scalars = vtkUnsignedLongArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::FLOAT)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::FLOAT)
   {
     scalars = vtkFloatArray::New();
   }
-  else if (m_PixelType->GetComponentType() == itk::ImageIOBase::DOUBLE)
+  else if (m_PixelType->GetComponentType() == itk::IOComponentEnum::DOUBLE)
   {
     scalars = vtkDoubleArray::New();
   }

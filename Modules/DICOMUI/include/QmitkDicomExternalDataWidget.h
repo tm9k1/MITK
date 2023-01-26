@@ -16,10 +16,6 @@ found in the LICENSE file.
 #include "ui_QmitkDicomExternalDataWidgetControls.h"
 #include <MitkDICOMUIExports.h>
 
-// include ctk
-#include <ctkDICOMDatabase.h>
-#include <ctkDICOMIndexer.h>
-
 // include QT
 #include <QHash>
 #include <QLabel>
@@ -30,11 +26,12 @@ found in the LICENSE file.
 #include <QWidget>
 
 class ctkFileDialog;
+class ctkDICOMDatabase;
+class ctkDICOMIndexer;
 
 /**
 * \brief QmitkDicomExternalDataWidget is a QWidget providing functionality for dicom import.
 *
-* \sa QmitkFunctionality
 * \ingroup Functionalities
 */
 class MITKDICOMUI_EXPORT QmitkDicomExternalDataWidget : public QWidget

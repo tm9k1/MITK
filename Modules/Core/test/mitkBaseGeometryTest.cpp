@@ -19,7 +19,6 @@ found in the LICENSE file.
 #include <mitkCommon.h>
 #include <mitkOperationActor.h>
 
-#include <itkAffineGeometryFrame.h>
 #include <itkBoundingBox.h>
 #include <itkIndex.h>
 #include <itkQuaternionRigidTransform.h>
@@ -391,15 +390,15 @@ public:
     vnlmatrix = anotherTransform->GetMatrix().GetVnlMatrix();
 
     mitk::VnlVector col;
-    col = vnlmatrix.get_column(0);
+    col = vnlmatrix.get_column(0).as_ref();
     col.normalize();
     col *= aSpacing[0];
     vnlmatrix.set_column(0, col);
-    col = vnlmatrix.get_column(1);
+    col = vnlmatrix.get_column(1).as_ref();
     col.normalize();
     col *= aSpacing[1];
     vnlmatrix.set_column(1, col);
-    col = vnlmatrix.get_column(2);
+    col = vnlmatrix.get_column(2).as_ref();
     col.normalize();
     col *= aSpacing[2];
     vnlmatrix.set_column(2, col);
@@ -512,7 +511,7 @@ public:
     CPPUNIT_ASSERT(dummy1->GetImageGeometry() == false);
 
     MITK_ASSERT_EQUAL(
-      mitk::AffineTransform3D::Pointer(dummy1->GetIndexToWorldTransform()), aTransform, "Contructor test 1");
+      mitk::AffineTransform3D::Pointer(dummy1->GetIndexToWorldTransform()), aTransform, "Constructor test 1");
 
     MITK_ASSERT_EQUAL(
       mitk::BaseGeometry::BoundingBoxType::ConstPointer(dummy1->GetBoundingBox()), aBoundingBox, "Constructor test 2");
@@ -525,7 +524,7 @@ public:
     dummy2->SetSpacing(anotherSpacing);
 
     DummyTestClass::Pointer dummy3 = DummyTestClass::New(*dummy2);
-    MITK_ASSERT_EQUAL(dummy3, dummy2, "Dummy contructor");
+    MITK_ASSERT_EQUAL(dummy3, dummy2, "Dummy constructor");
   }
 
   // Equal Tests
@@ -868,7 +867,7 @@ public:
     itkIndex2[0] = itkIndex2[1] = 2;
     mitkIndex[0] = mitkIndex[1] = mitkIndex[2] = 13;
 
-    // check for constistency
+    // check for consistency
     mitk::Point3D point;
     dummyGeometry->IndexToWorld(itkIndex2, point);
     dummyGeometry->WorldToIndex(point, itkIndex2b);

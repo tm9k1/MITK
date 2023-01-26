@@ -33,18 +33,23 @@
   </extension>
 
   <extension point="org.mitk.gui.qt.datamanager.contextMenuActions">
+    <contextMenuAction nodeDescriptorName="Image" label="Create Segmentation" icon="" class="QmitkCreateMultiLabelSegmentationAction" />
+    <contextMenuAction nodeDescriptorName="Image" label="Convert to Segmentation" icon="" class="QmitkConvertToMultiLabelSegmentationAction" />
     <contextMenuAction nodeDescriptorName="ImageMask" label="Create polygon model" icon="" smoothed="false" class="QmitkCreatePolygonModelAction" />
     <contextMenuAction nodeDescriptorName="ImageMask" label="Create smoothed polygon model" icon="" smoothed = "true" class="QmitkCreatePolygonModelAction" />
     <contextMenuAction nodeDescriptorName="ImageMask" label="Autocrop" icon="" class="QmitkAutocropAction" />
+    <contextMenuAction nodeDescriptorName="ImageMask" label="Convert to Label" icon="" class="QmitkConvertMaskToLabelAction" />
     <contextMenuAction nodeDescriptorName="LabelSetImage" label="Create polygon model" icon="" smoothed="false" class="QmitkCreatePolygonModelAction" />
     <contextMenuAction nodeDescriptorName="LabelSetImage" label="Create smoothed polygon model" icon="" smoothed = "true" class="QmitkCreatePolygonModelAction" />
     <contextMenuAction nodeDescriptorName="LabelSetImage" label="Autocrop" icon="" class="QmitkAutocropLabelSetImageAction" />
+    <contextMenuAction nodeDescriptorName="LabelSetImage" label="Save LabelSet Preset" icon="" class="QmitkSaveMultiLabelPresetAction" />
+    <contextMenuAction nodeDescriptorName="LabelSetImage" label="Load LabelSet Preset" icon="" class="QmitkLoadMultiLabelPresetAction" />
+    <contextMenuAction nodeDescriptorName="Surface" label="Convert to Label" icon="" class="QmitkConvertSurfaceToLabelAction" />
   </extension>
 
   <extension point="org.blueberry.ui.keywords">
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Segmentation" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Otsu" />
-    <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Correction" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Paint" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Wipe" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Region Growing" />
@@ -53,12 +58,11 @@
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Live Wire" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Fast Marching" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Threshold" />
-    <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Watershed" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Picking" />
-    <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Watershed" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Annotation annote" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Labeling" />
     <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="Tools" />
+    <keyword id="org.mitk.views.segmentation.ViewKeyword"  label="nnUNet" />
 
     <keyword id="org.mitk.views.segmentationutilities.ViewKeyword"  label="Segmentation" />
     <keyword id="org.mitk.views.segmentationutilities.ViewKeyword"  label="Difference" />

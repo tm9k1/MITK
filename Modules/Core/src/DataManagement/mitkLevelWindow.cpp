@@ -134,6 +134,9 @@ void mitk::LevelWindow::SetWindowBounds(mitk::ScalarType lowerBound,
   if (IsFixed())
     return;
 
+  upperBound = std::clamp(upperBound, -1e300, 1e300);
+  lowerBound = std::clamp(lowerBound, -1e300, 1e300);
+
   m_LowerWindowBound = lowerBound;
   m_UpperWindowBound = upperBound;
 
@@ -226,7 +229,7 @@ Compute the smallest (minValue), second smallest (min2ndValue), second largest (
 largest (maxValue) data value by traversing the pixel values only once. In the
 same scan it also computes the count of minValue values and maxValue values.
 After that a basic histogram with specific information about the
-extrems is complete.
+extremes is complete.
 
 If minValue == maxValue, the center slice is uniform and the above scan is repeated for
 the complete image, not just one slice
@@ -264,8 +267,8 @@ void mitk::LevelWindow::SetAuto(const mitk::Image *image,
   if (image == nullptr || !image->IsInitialized())
     return;
 
-  if (itk::ImageIOBase::IOComponentType::FLOAT == image->GetPixelType().GetComponentType()
-  ||  itk::ImageIOBase::IOComponentType::DOUBLE == image->GetPixelType().GetComponentType())
+  if (itk::IOComponentEnum::FLOAT == image->GetPixelType().GetComponentType()
+  ||  itk::IOComponentEnum::DOUBLE == image->GetPixelType().GetComponentType())
   {
     m_IsFloatingImage = true;
   }
@@ -330,10 +333,10 @@ void mitk::LevelWindow::SetAuto(const mitk::Image *image,
   }
 
   // Fix for bug# 344 Level Window wird bei Eris Cut bildern nicht richtig gesetzt
-  if (image->GetPixelType().GetPixelType() == itk::ImageIOBase::SCALAR &&
-      image->GetPixelType().GetComponentType() == itk::ImageIOBase::INT && image->GetPixelType().GetBpe() >= 8)
+  if (image->GetPixelType().GetPixelType() == itk::IOPixelEnum::SCALAR &&
+      image->GetPixelType().GetComponentType() == itk::IOComponentEnum::INT && image->GetPixelType().GetBpe() >= 8)
   {
-    // the windows compiler complains about ambiguos 'pow' call, therefore static casting to (double, int)
+    // the windows compiler complains about ambiguous 'pow' call, therefore static casting to (double, int)
     if (minValue == -(pow((double)2.0, static_cast<int>(image->GetPixelType().GetBpe() / 2))))
     {
       minValue = min2ndValue;

@@ -72,9 +72,9 @@ public:
   QmitkRenderWindow *GetQmitkRenderWindow(const QString &id) const override;
 
   /**
-  * \see mitk::IRenderWindowPart::GetQmitkRenderWindow(mitk::BaseRenderer::ViewDirection)
+  * \see mitk::IRenderWindowPart::GetQmitkRenderWindow(mitk::AnatomicalPlane)
   */
-  QmitkRenderWindow *GetQmitkRenderWindow(const mitk::BaseRenderer::ViewDirection &viewDirection) const override;
+  QmitkRenderWindow *GetQmitkRenderWindow(const mitk::AnatomicalPlane &orientation) const override;
 
   /**
    * \see mitk::QmitkAbstractRenderEditor::GetRenderingManager()
@@ -93,7 +93,17 @@ public:
   void ForceImmediateUpdate(mitk::RenderingManager::RequestType) override;
 
   /**
-   * \see mitk::QmitkAbstractRenderEditor::GetTimeNavigationController()
+  * \see mitk::IRenderWindowPart::SetReferenceGeometry()
+  */
+  void SetReferenceGeometry(const mitk::TimeGeometry* referenceGeometry, bool resetCamera) override;
+
+  /**
+  * \see mitk::IRenderWindowPart::HasCoupledRenderWindows
+  */
+  bool HasCoupledRenderWindows() const override;
+
+  /**
+   * \see mitk::IRenderWindowPart::GetTimeNavigationController()
    */
   mitk::SliceNavigationController *GetTimeNavigationController() const override;
 

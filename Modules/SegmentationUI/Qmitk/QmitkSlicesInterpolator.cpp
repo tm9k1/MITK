@@ -12,9 +12,6 @@ found in the LICENSE file.
 
 #include "QmitkSlicesInterpolator.h"
 
-#include "QmitkSelectableGLWidget.h"
-#include "QmitkStdMultiWidget.h"
-
 #include "mitkApplyDiffImageOperation.h"
 #include "mitkColorProperty.h"
 #include "mitkCoreObjectFactory.h"
@@ -22,7 +19,6 @@ found in the LICENSE file.
 #include "mitkInteractionConst.h"
 #include "mitkLevelWindowProperty.h"
 #include "mitkOperationEvent.h"
-#include "mitkOverwriteSliceImageFilter.h"
 #include "mitkProgressBar.h"
 #include "mitkProperties.h"
 #include "mitkRenderingManager.h"
@@ -189,14 +185,7 @@ QmitkSlicesInterpolator::QmitkSlicesInterpolator(QWidget *parent, const char * /
   m_3DContourNode->SetProperty("material.wireframeLineWidth", mitk::FloatProperty::New(2.0f));
   m_3DContourNode->SetProperty("3DContourContainer", mitk::BoolProperty::New(true));
   m_3DContourNode->SetProperty("includeInBoundingBox", mitk::BoolProperty::New(false));
-  m_3DContourNode->SetVisibility(
-    false, mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget0")));
-  m_3DContourNode->SetVisibility(
-    false, mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget1")));
-  m_3DContourNode->SetVisibility(
-    false, mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget2")));
-  m_3DContourNode->SetVisibility(
-    false, mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget3")));
+  m_3DContourNode->SetVisibility(false);
 
   QWidget::setContentsMargins(0, 0, 0, 0);
   if (QWidget::layout() != nullptr)
@@ -625,9 +614,7 @@ void QmitkSlicesInterpolator::OnSurfaceInterpolationFinished()
   mitk::Surface::Pointer interpolatedSurface = m_SurfaceInterpolator->GetInterpolationResult();
   mitk::DataNode *workingNode = m_ToolManager->GetWorkingData(0);
 
-  if (interpolatedSurface.IsNotNull() && workingNode &&
-      workingNode->IsVisible(
-        mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget2"))))
+  if (interpolatedSurface.IsNotNull() && workingNode && workingNode->IsVisible(nullptr))
   {
     m_BtnApply3D->setEnabled(true);
 
@@ -757,7 +744,7 @@ void QmitkSlicesInterpolator::AcceptAllInterpolations(mitk::SliceNavigationContr
       auto pixelType = mitk::MakeScalarPixelType<mitk::Tool::DefaultSegmentationDataType>();
 
       // For legacy purpose support former pixel type of segmentations (before multilabel)
-      if (itk::ImageIOBase::UCHAR == m_Segmentation->GetImageDescriptor()->GetChannelDescriptor().GetPixelType().GetComponentType())
+      if (itk::IOComponentEnum::UCHAR == m_Segmentation->GetImageDescriptor()->GetChannelDescriptor().GetPixelType().GetComponentType())
         pixelType = mitk::MakeScalarPixelType<unsigned char>();
 
       memset(accessor.GetData(), 0, pixelType.GetSize() * diffImage->GetDimension(0) * diffImage->GetDimension(1) * diffImage->GetDimension(2));
@@ -918,7 +905,7 @@ void QmitkSlicesInterpolator::OnAccept3DInterpolationClicked()
 
   surfaceToImageFilter->SetImage(referenceImage);
   surfaceToImageFilter->SetMakeOutputBinary(true);
-  surfaceToImageFilter->SetUShortBinaryPixelType(itk::ImageIOBase::USHORT == segmentation->GetPixelType().GetComponentType());
+  surfaceToImageFilter->SetUShortBinaryPixelType(itk::IOComponentEnum::USHORT == segmentation->GetPixelType().GetComponentType());
   surfaceToImageFilter->SetInput(interpolatedSurface);
   surfaceToImageFilter->Update();
 
@@ -1046,6 +1033,8 @@ void ::QmitkSlicesInterpolator::RunPlaneSuggestion()
   mitk::ProgressBar::GetInstance()->Progress();
 
   // Create plane suggestion
+  // TODO: "stdmulti.widget0" needs to be removed, see T29203
+  // Currently this feature is disabled, so we don't care, see T28261
   mitk::BaseRenderer::Pointer br =
     mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget0"));
   mitk::PlaneProposer planeProposer;
@@ -1188,8 +1177,8 @@ void QmitkSlicesInterpolator::StopUpdateInterpolationTimer()
 {
   m_Timer->stop();
   m_InterpolatedSurfaceNode->SetProperty("color", mitk::ColorProperty::New(SURFACE_COLOR_RGB));
-  mitk::RenderingManager::GetInstance()->RequestUpdate(
-    mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget3"))->GetRenderWindow());
+
+  mitk::RenderingManager::GetInstance()->RequestUpdateAll(mitk::RenderingManager::REQUEST_UPDATE_3DWINDOWS);
 }
 
 void QmitkSlicesInterpolator::ChangeSurfaceColor()
@@ -1206,8 +1195,8 @@ void QmitkSlicesInterpolator::ChangeSurfaceColor()
     m_InterpolatedSurfaceNode->SetProperty("color", mitk::ColorProperty::New(SURFACE_COLOR_RGB));
   }
   m_InterpolatedSurfaceNode->Update();
-  mitk::RenderingManager::GetInstance()->RequestUpdate(
-    mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget3"))->GetRenderWindow());
+
+  mitk::RenderingManager::GetInstance()->RequestUpdateAll(mitk::RenderingManager::REQUEST_UPDATE_3DWINDOWS);
 }
 
 void QmitkSlicesInterpolator::On3DInterpolationActivated(bool on)
@@ -1221,9 +1210,9 @@ void QmitkSlicesInterpolator::On3DInterpolationActivated(bool on)
     {
       mitk::DataNode *workingNode = m_ToolManager->GetWorkingData(0);
 
-      if (workingNode)
+      if (nullptr != workingNode)
       {
-        if ((workingNode->IsVisible(mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget2")))))
+        if (workingNode->IsVisible(nullptr))
         {
           int ret = QMessageBox::Yes;
 
@@ -1382,8 +1371,13 @@ void QmitkSlicesInterpolator::Show3DInterpolationResult(bool status)
     m_InterpolatedSurfaceNode->SetVisibility(status);
 
   if (m_3DContourNode.IsNotNull())
-    m_3DContourNode->SetVisibility(
-      status, mitk::BaseRenderer::GetInstance(mitk::BaseRenderer::GetRenderWindowByName("stdmulti.widget3")));
+  {
+    auto allRenderWindows = mitk::BaseRenderer::GetAll3DRenderWindows();
+    for (auto mapit = allRenderWindows.begin(); mapit != allRenderWindows.end(); ++mapit)
+    {
+      m_3DContourNode->SetVisibility(status, mapit->second);
+    }
+  }
 
   mitk::RenderingManager::GetInstance()->RequestUpdateAll();
 }

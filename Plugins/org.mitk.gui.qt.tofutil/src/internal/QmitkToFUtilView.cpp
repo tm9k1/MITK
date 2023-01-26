@@ -9,8 +9,8 @@ Use of this source code is governed by a 3-clause BSD license that can be
 found in the LICENSE file.
 
 ============================================================================*/
+
 // Blueberry
-#include <mitkIRenderingManager.h>
 #include <mitkIRenderWindowPart.h>
 #include <mitkILinkedRenderWindowPart.h>
 
@@ -121,11 +121,11 @@ void QmitkToFUtilView::Activated()
     {
       linkedRenderWindowPart->EnableSlicingPlanes(false);
     }
-    renderWindowPart->GetQmitkRenderWindow("axial")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::SliceNavigationController::Axial);
+    renderWindowPart->GetQmitkRenderWindow("axial")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::AnatomicalPlane::Axial);
     renderWindowPart->GetQmitkRenderWindow("axial")->GetSliceNavigationController()->SliceLockedOn();
-    renderWindowPart->GetQmitkRenderWindow("sagittal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::SliceNavigationController::Axial);
+    renderWindowPart->GetQmitkRenderWindow("sagittal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::AnatomicalPlane::Axial);
     renderWindowPart->GetQmitkRenderWindow("sagittal")->GetSliceNavigationController()->SliceLockedOn();
-    renderWindowPart->GetQmitkRenderWindow("coronal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::SliceNavigationController::Axial);
+    renderWindowPart->GetQmitkRenderWindow("coronal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::AnatomicalPlane::Axial);
     renderWindowPart->GetQmitkRenderWindow("coronal")->GetSliceNavigationController()->SliceLockedOn();
 
     mitk::RenderingManager::GetInstance()->InitializeViews();
@@ -227,11 +227,11 @@ void QmitkToFUtilView::ResetGUIToDefault()
     {
       linkedRenderWindowPart->EnableSlicingPlanes(true);
     }
-    renderWindowPart->GetQmitkRenderWindow("axial")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::SliceNavigationController::Axial);
+    renderWindowPart->GetQmitkRenderWindow("axial")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::AnatomicalPlane::Axial);
     renderWindowPart->GetQmitkRenderWindow("axial")->GetSliceNavigationController()->SliceLockedOff();
-    renderWindowPart->GetQmitkRenderWindow("sagittal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::SliceNavigationController::Sagittal);
+    renderWindowPart->GetQmitkRenderWindow("sagittal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::AnatomicalPlane::Sagittal);
     renderWindowPart->GetQmitkRenderWindow("sagittal")->GetSliceNavigationController()->SliceLockedOff();
-    renderWindowPart->GetQmitkRenderWindow("coronal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::SliceNavigationController::Frontal);
+    renderWindowPart->GetQmitkRenderWindow("coronal")->GetSliceNavigationController()->SetDefaultViewDirection(mitk::AnatomicalPlane::Coronal);
     renderWindowPart->GetQmitkRenderWindow("coronal")->GetSliceNavigationController()->SliceLockedOff();
 
     this->UseToFVisibilitySettings(false);
@@ -506,8 +506,8 @@ void QmitkToFUtilView::UseToFVisibilitySettings(bool useToF)
   // initialize images
   if (m_MitkDistanceImage.IsNotNull())
   {
-      mitk::RenderingManager::GetInstance()->InitializeViews(
-          this->m_MitkDistanceImage->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_2DWINDOWS, true);
+    mitk::RenderingManager::GetInstance()->InitializeViews(
+      this->m_MitkDistanceImage->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_2DWINDOWS);
   }
   if(this->m_SurfaceNode.IsNotNull())
   {
@@ -529,7 +529,8 @@ void QmitkToFUtilView::UseToFVisibilitySettings(bool useToF)
     if(RGBImageHasDifferentResolution)
     {
       //update the display geometry by using the RBG image node. Only for renderwindow coronal
-      mitk::RenderingManager::GetInstance()->InitializeView( renderWindowPart->GetQmitkRenderWindow("coronal")->renderWindow(), this->m_RGBImageNode->GetData()->GetGeometry() );
+      mitk::RenderingManager::GetInstance()->InitializeView(renderWindowPart->GetQmitkRenderWindow("coronal")->renderWindow(),
+        this->m_RGBImageNode->GetData()->GetGeometry());
     }
   }
 }

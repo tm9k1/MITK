@@ -18,12 +18,12 @@ found in the LICENSE file.
 #include <mitkStatusBar.h>
 
 #include <mitkIRenderWindowPart.h>
-#include <mitkIRenderingManager.h>
+
+#include <mitkCoreServices.h>
+#include <mitkIPreferencesService.h>
+#include <mitkIPreferences.h>
 
 // Blueberry
-#include <berryIPreferencesService.h>
-#include <berryIPreferences.h>
-#include <berryPlatform.h>
 #include <berryIWorkbenchPage.h>
 
 using namespace berry;
@@ -51,8 +51,8 @@ void QmitkCreatePolygonModelAction::Run(const QList<DataNode::Pointer> &selected
   try
   {
     // Get preference properties for smoothing and decimation
-    IPreferencesService* prefService = Platform::GetPreferencesService();
-    IPreferences::Pointer segPref = prefService->GetSystemPreferences()->Node("/org.mitk.views.segmentation");
+    auto* prefService = mitk::CoreServices::GetPreferencesService();
+    auto* segPref = prefService->GetSystemPreferences()->Node("/org.mitk.views.segmentation");
 
     bool smoothingHint = segPref->GetBool("smoothing hint", true);
     ScalarType smoothing = segPref->GetDouble("smoothing value", 1.0);

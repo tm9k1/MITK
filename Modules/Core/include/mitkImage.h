@@ -46,10 +46,9 @@ namespace mitk
   /**
     * @brief Image class for storing images
     *
-    * Can be asked for header information, the data vector,
-    * the mitkIpPicDescriptor struct or vtkImageData objects. If not the complete
-    * data is required, the appropriate SubImageSelector class should be used
-    * for access.
+    * Can be asked for header information, the data vector, or vtkImageData objects.
+    * If not the complete data is required, the appropriate SubImageSelector class
+    * should be used for access.
     * Image organizes sets of slices (s x 2D), volumes (t x 3D) and channels (n
     * x ND). Channels are for different kind of data, e.g., morphology in
     * channel 0, velocities in channel 1. All channels must have the same Geometry! In
@@ -390,10 +389,10 @@ namespace mitk
             (j == 2) && (m_Dimensions[2] == 1))
         {
           // Negative spacings can occur when reading single DICOM slices with ITK via GDCMIO
-          // In these cases spacing is not determind by ITK correctly (because it distinguishes correctly
+          // In these cases spacing is not determined by ITK correctly (because it distinguishes correctly
           // between slice thickness and inter slice distance -- slice distance is meaningless for
           // single slices).
-          // I experienced that ITK produced something meaningful nonetheless because is is
+          // I experienced that ITK produced something meaningful nonetheless because it is
           // evaluating the tag "(0018,0088) Spacing between slices" as a fallback. This tag is not
           // reliable (http://www.itk.org/pipermail/insight-users/2005-September/014711.html)
           // but gives at least a hint.
@@ -522,7 +521,7 @@ namespace mitk
   protected:
     mitkCloneMacro(Self);
 
-    typedef itk::MutexLockHolder<itk::SimpleFastMutexLock> MutexHolder;
+    typedef std::lock_guard<std::mutex> MutexHolder;
 
     int GetSliceIndex(int s = 0, int t = 0, int n = 0) const;
 
@@ -563,7 +562,7 @@ namespace mitk
     mutable ImageDataItemPointerArray m_Channels;
     mutable ImageDataItemPointerArray m_Volumes;
     mutable ImageDataItemPointerArray m_Slices;
-    mutable itk::SimpleFastMutexLock m_ImageDataArraysLock;
+    mutable std::mutex m_ImageDataArraysLock;
 
     unsigned int m_Dimension;
 
@@ -611,13 +610,13 @@ namespace mitk
     mutable std::vector<ImageAccessorBase *> m_VtkReaders;
 
     /** A mutex, which needs to be locked to manage m_Readers and m_Writers */
-    itk::SimpleFastMutexLock m_ReadWriteLock;
+    mutable std::mutex m_ReadWriteLock;
     /** A mutex, which needs to be locked to manage m_VtkReaders */
-    itk::SimpleFastMutexLock m_VtkReadersLock;
+    mutable std::mutex m_VtkReadersLock;
   };
 
   /**
-  * @brief Equal A function comparing two images for beeing equal in meta- and imagedata
+  * @brief Equal A function comparing two images for being equal in meta- and imagedata
   *
   * @ingroup MITKTestingAPI
   *

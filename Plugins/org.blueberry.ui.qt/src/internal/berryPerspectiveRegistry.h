@@ -74,19 +74,6 @@ public:
   void AddPerspective(PerspectiveDescriptor::Pointer desc);
 
   /**
-   * Create a new perspective.
-   *
-   * @param label
-   *            the name of the new descriptor
-   * @param originalDescriptor
-   *            the descriptor on which to base the new descriptor
-   * @return a new perspective descriptor or <code>null</code> if the
-   *         creation failed.
-   */
-  IPerspectiveDescriptor::Pointer CreatePerspective(const QString& label,
-                                                    IPerspectiveDescriptor::Pointer originalDescriptor);
-
-  /**
    * Reverts a list of perspectives back to the plugin definition
    *
    * @param perspToRevert
@@ -163,6 +150,9 @@ public:
 
   void SetDefaultPerspective(const QString& id) override;
 
+  IPerspectiveDescriptor::Pointer CreatePerspective(const QString& label,
+    IPerspectiveDescriptor::Pointer originalDescriptor) override;
+
   IPerspectiveDescriptor::Pointer ClonePerspective(const QString& id, const QString& label,
       IPerspectiveDescriptor::Pointer originalDescriptor) override;
 
@@ -185,11 +175,6 @@ protected:
   bool HasCustomDefinition(PerspectiveDescriptor::ConstPointer desc) const;
 
 private:
-
-  /**
-   * Initialize the preference change listener.
-   */
-  void InitializePreferenceChangeListener();
 
   /**
    * @param desc

@@ -80,11 +80,10 @@ void SaveSliceOrImageAsPNG(mitk::Image::Pointer image, mitk::Image::Pointer mask
   ds->Add(nodeM);
 
   auto geo = ds->ComputeBoundingGeometry3D(ds->GetAll());
-  mitk::RenderingManager::GetInstance()->InitializeViews(
-    mask->GetTimeGeometry(), mitk::RenderingManager::REQUEST_UPDATE_ALL, true);
+  mitk::RenderingManager::GetInstance()->InitializeViews(mask->GetTimeGeometry());
 
   mitk::SliceNavigationController::Pointer sliceNaviController = renderWindow.GetSliceNavigationController();
-  sliceNaviController->SetViewDirection(mitk::SliceNavigationController::Axial);
+  sliceNaviController->SetViewDirection(mitk::AnatomicalPlane::Axial);
   unsigned int numberOfSteps = 1;
   if (sliceNaviController)
   {
