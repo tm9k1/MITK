@@ -28,7 +28,11 @@ Qmitk/QmitkMaskStampWidget.cpp
 Qmitk/QmitkStaticDynamicSegmentationDialog.cpp
 Qmitk/QmitkSurfaceBasedInterpolatorWidget.cpp
 Qmitk/QmitkSimpleLabelSetListWidget.cpp
+Qmitk/QmitkMultiLabelSegmentationInspector.cpp
 Qmitk/QmitkMultiLabelSegmentationTreeModel.cpp
+Qmitk/QmitkMultiLabelSegmentationTreeView.cpp
+Qmitk/QmitkLabelColorItemDelegate.cpp
+Qmitk/QmitkLabelToggleItemDelegate.cpp
 )
 
 set(MOC_H_FILES
@@ -62,7 +66,11 @@ Qmitk/QmitkMaskStampWidget.h
 Qmitk/QmitkStaticDynamicSegmentationDialog.h
 Qmitk/QmitkSurfaceBasedInterpolatorWidget.h
 Qmitk/QmitkSimpleLabelSetListWidget.h
+Qmitk/QmitkMultiLabelSegmentationInspector.h
 Qmitk/QmitkMultiLabelSegmentationTreeModel.h
+Qmitk/QmitkMultiLabelSegmentationTreeView.h
+Qmitk/QmitkLabelColorItemDelegate.h
+Qmitk/QmitkLabelToggleItemDelegate.h
 )
 
 set(UI_FILES
@@ -74,6 +82,7 @@ Qmitk/QmitkMaskStampWidgetGUIControls.ui
 Qmitk/QmitkSurfaceBasedInterpolatorWidgetGUIControls.ui
 Qmitk/QmitknnUNetToolGUIControls.ui
 Qmitk/QmitkEditableContourToolGUIControls.ui
+Qmitk/QmitkMultiLabelSegmentationInspector.ui
 )
 
 set(QRC_FILES
