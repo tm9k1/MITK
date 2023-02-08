@@ -39,6 +39,7 @@ found in the LICENSE file.
 #include <QmitkRenderWindow.h>
 #include <QmitkStaticDynamicSegmentationDialog.h>
 #include <QmitkNewSegmentationDialog.h>
+#include <QmitkMultiLabelSegmentationInspector.h>
 
 // us
 #include <usModuleResource.h>
@@ -582,6 +583,9 @@ void QmitkSegmentationView::CreateQtPartControl(QWidget* parent)
    m_Controls->referenceNodeSelector->SetAutoSelectNewNodes(true);
    m_Controls->workingNodeSelector->SetAutoSelectNewNodes(true);
 
+   m_Inspector = new QmitkMultiLabelSegmentationInspector(parent);
+   m_Controls->verticalLayout->addWidget(m_Inspector);
+
    this->UpdateGUI();
 }
 
@@ -806,6 +810,8 @@ void QmitkSegmentationView::EstablishLabelSetConnection()
     mitk::Label::PixelType>(m_Controls->labelSetWidget, &QmitkLabelSetWidget::SelectLabelByPixelValue);
   workingImage->AfterChangeLayerEvent += mitk::MessageDelegate<QmitkSegmentationView>(
     this, &QmitkSegmentationView::UpdateGUI);
+  workingImage->GetActiveLabelSet()->ActiveLabelEvent += mitk::MessageDelegate1<QmitkMultiLabelSegmentationInspector,
+    mitk::Label::PixelType>(m_Inspector, &QmitkMultiLabelSegmentationInspector::SetSelectedLabel);
 }
 
 void QmitkSegmentationView::LooseLabelSetConnection()
@@ -1080,6 +1086,7 @@ void QmitkSegmentationView::ValidateSelectionInput()
     if (numberOfLabels > 1)
       m_Controls->slicesInterpolator->setEnabled(true);
   }
+    m_Inspector->SetMultiLabelSegmentation(dynamic_cast<mitk::LabelSetImage*>(workingNode->GetData()));
 
   toolSelectionBoxesEnabled &= numberOfLabels > 1;
 
