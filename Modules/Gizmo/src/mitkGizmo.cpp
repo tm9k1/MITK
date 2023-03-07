@@ -11,6 +11,7 @@ found in the LICENSE file.
 ============================================================================*/
 
 #include "mitkGizmo.h"
+#include "mitkGizmoInteractorCylinder.h"
 #include "mitkGizmoInteractor.h"
 
 // MITK includes
@@ -34,6 +35,10 @@ found in the LICENSE file.
 #include <vtkSphereSource.h>
 #include <vtkTransformPolyDataFilter.h>
 #include <vtkTubeFilter.h>
+#include <vtkMinimalStandardRandomSequence.h>
+#include <vtkMath.h>
+#include <vtkOBBTree.h>
+#include <vtkQuad.h>
 
 // ITK includes
 #include <itkCommand.h>
@@ -162,6 +167,65 @@ bool mitk::Gizmo::RemoveGizmoFromNode(DataNode *node, DataStorage *storage)
   return !gizmoChildren->empty();
 }
 
+mitk::DataNode::Pointer mitk::Gizmo::AddGizmoToNodeCylinder(DataNode *node, DataStorage *storage)
+{
+  assert(node);
+  if (node->GetData() == nullptr || node->GetData()->GetGeometry() == nullptr)
+  {
+    return nullptr;
+  }
+  //--------------------------------------------------------------
+  // Add visual gizmo that follows the node to be manipulated
+  //--------------------------------------------------------------
+
+  auto gizmo = Gizmo::New();
+  auto gizmoNode = DataNode::New();
+  gizmoNode->SetName("Gizmo");
+  gizmoNode->SetData(gizmo);
+  gizmo->FollowGeometryCylinder(node->GetData());
+
+  //--------------------------------------------------------------
+  // Add interaction to the gizmo
+  //--------------------------------------------------------------
+
+  mitk::GizmoInteractorCylinder::Pointer interactor = mitk::GizmoInteractorCylinder::New();
+  interactor->LoadStateMachine("Gizmo3DStates.xml", us::GetModuleContext()->GetModule());
+  interactor->SetEventConfig("Gizmo3DConfig.xml", us::ModuleRegistry::GetModule("MitkGizmo"));
+
+  interactor->SetGizmoNode(gizmoNode);
+  interactor->SetManipulatedObjectNode(node);
+
+  //compute direction from surface
+  mitk::Surface::Pointer cylinder = dynamic_cast<mitk::Surface*>(node->GetData());
+  vtkSmartPointer<vtkPolyData> vtkPolyData = cylinder->GetVtkPolyData();
+  mitk::Vector3D direction = ExtractOrientationFromSurface(vtkPolyData);
+  Vector3D axisX, axisY, axisZ;
+  ComputeOrientation(&direction, axisX, axisY, axisZ);
+  interactor->SetInitialAxes(axisX, axisY, axisZ);
+
+  //--------------------------------------------------------------
+  // Note current opacity for later restore and lower it
+  //--------------------------------------------------------------
+
+  float currentNodeOpacity = 1.0;
+  if (node->GetOpacity(currentNodeOpacity, nullptr))
+  {
+    if (currentNodeOpacity > 0.5f)
+    {
+      node->SetFloatProperty(PROPERTY_KEY_ORIGINAL_OBJECT_OPACITY, currentNodeOpacity);
+      node->SetOpacity(0.5f);
+    }
+  }
+
+  if (storage)
+  {
+    storage->Add(gizmoNode, node);
+    gizmo->m_GizmoRemover->UpdateStorageObservation(storage, gizmoNode, node);
+  }
+
+  return gizmoNode;
+}
+
 mitk::DataNode::Pointer mitk::Gizmo::AddGizmoToNode(DataNode *node, DataStorage *storage)
 {
   assert(node);
@@ -236,6 +300,34 @@ mitk::Gizmo::~Gizmo()
   {
     m_FollowedGeometry->RemoveObserver(m_FollowerTag);
   }
+}
+
+
+void mitk::Gizmo::ComputeOrientation(mitk::Vector3D* direction, Vector3D &axisX, Vector3D &axisY, Vector3D &axisZ)
+{
+    axisY = *direction;
+
+    vtkSmartPointer<vtkMinimalStandardRandomSequence> rng =
+        vtkSmartPointer<vtkMinimalStandardRandomSequence>::New();
+    rng->SetSeed(8775070); // For testing.
+
+
+    // The Z axis is an arbitrary vector cross X
+    double arbitrary[3];
+    for (auto i = 0; i < 3; ++i)
+    {
+      rng->Next();
+      arbitrary[i] = rng->GetRangeValue(-10, 10);
+    }
+    vtkMath::Cross(&axisY[0], &arbitrary[0], &axisX[0]);
+
+
+    // The Y axis is Z cross X
+    vtkMath::Cross(&axisX[0], &axisY[0], &axisZ[0]);
+
+    vtkMath::Normalize(&axisY[0]);
+    vtkMath::Normalize(&axisX[0]);
+    vtkMath::Normalize(&axisZ[0]);
 }
 
 void mitk::Gizmo::UpdateRepresentation()
@@ -420,6 +512,7 @@ vtkSmartPointer<vtkPolyData> mitk::Gizmo::BuildGizmo()
   double longestAxis = GetLongestRadius();
 
   vtkSmartPointer<vtkAppendPolyData> appender = vtkSmartPointer<vtkAppendPolyData>::New();
+
   appender->AddInputData(BuildAxis(m_Center,
                                    m_AxisX,
                                    longestAxis,
@@ -471,6 +564,51 @@ void mitk::Gizmo::FollowGeometry(BaseGeometry *geom)
   OnFollowedGeometryModified();
 }
 
+void mitk::Gizmo::FollowGeometryCylinder(BaseData *basedata)
+{
+  auto observer = itk::SimpleMemberCommand<Gizmo>::New();
+  observer->SetCallbackFunction(this, &Gizmo::OnFollowedGeometryCylinderModified);
+
+  if (m_FollowedGeometry.IsNotNull())
+  {
+    m_FollowedGeometry->RemoveObserver(m_FollowerTag);
+  }
+
+  m_FollowedGeometry = basedata->GetGeometry();
+
+  m_FollowerTag = m_FollowedGeometry->AddObserver(itk::ModifiedEvent(), observer);
+
+
+  // initial adjustment
+  mitk::Surface::Pointer cylinder = dynamic_cast<mitk::Surface*>(basedata);
+  vtkSmartPointer<vtkPolyData> vtkPolyData = cylinder->GetVtkPolyData();
+  mitk::Vector3D direction = ExtractOrientationFromSurface(vtkPolyData);
+  ComputeOrientation(&direction, m_AxisXorig, m_AxisYorig, m_AxisZorig);
+  OnFollowedGeometryCylinderModified();
+}
+
+
+void mitk::Gizmo::OnFollowedGeometryCylinderModified()
+{
+  m_Center = m_FollowedGeometry->GetCenter();
+
+  mitk::AffineTransform3D *affine = m_FollowedGeometry->GetIndexToWorldTransform();
+
+  m_AxisX = affine->TransformVector(m_AxisXorig);
+  m_AxisY = affine->TransformVector(m_AxisYorig);
+  m_AxisZ = affine->TransformVector(m_AxisZorig);
+  m_AxisX.Normalize();
+  m_AxisY.Normalize();
+  m_AxisZ.Normalize();
+
+  for (int dim = 0; dim < 3; ++dim)
+  {
+    m_Radius[dim] = 0.5 * m_FollowedGeometry->GetExtentInMM(dim);
+  }
+
+  UpdateRepresentation();
+}
+
 void mitk::Gizmo::OnFollowedGeometryModified()
 {
   m_Center = m_FollowedGeometry->GetCenter();
@@ -489,6 +627,168 @@ void mitk::Gizmo::OnFollowedGeometryModified()
   }
 
   UpdateRepresentation();
+}
+
+double mitk::Gizmo::MakeAQuad(std::vector<std::array<double, 3>> points,
+                 std::array<double, 3>& center)
+{
+  vtkNew<vtkQuad> aQuad;
+  aQuad->GetPoints()->SetPoint(0, points[0].data());
+  aQuad->GetPoints()->SetPoint(1, points[1].data());
+  aQuad->GetPoints()->SetPoint(2, points[2].data());
+  aQuad->GetPoints()->SetPoint(3, points[3].data());
+  aQuad->GetPointIds()->SetId(0, 0);
+  aQuad->GetPointIds()->SetId(1, 1);
+  aQuad->GetPointIds()->SetId(2, 2);
+  aQuad->GetPointIds()->SetId(3, 3);
+
+  std::array<double, 3> pcenter;
+  pcenter[0] = pcenter[1] = pcenter[2] = -12345.0;
+  aQuad->GetParametricCenter(pcenter.data());
+  std::vector<double> cweights(aQuad->GetNumberOfPoints());
+  int pSubId = 0;
+  aQuad->EvaluateLocation(pSubId, pcenter.data(), center.data(),
+                          &(*cweights.begin()));
+
+  return std::sqrt(aQuad->GetLength2()) / 2.0;
+}
+
+mitk::Vector3D mitk::Gizmo::ExtractOrientationFromSurface(vtkSmartPointer<vtkPolyData> polyData)
+{
+
+
+    //https://kitware.github.io/vtk-examples/site/Cxx/PolyData/OrientedBoundingCylinder/
+    // Get bounds of polydata
+    std::array<double, 6> bounds;
+    polyData->GetBounds(bounds.data());
+
+    // Create the tree
+    vtkNew<vtkOBBTree> obbTree;
+    obbTree->SetDataSet(polyData);
+    obbTree->SetMaxLevel(1);
+    obbTree->BuildLocator();
+
+    // Get the PolyData for the OBB
+    vtkNew<vtkPolyData> obbPolydata;
+    obbTree->GenerateRepresentation(0, obbPolydata);
+
+    // Get the points of the OBB
+    vtkNew<vtkPoints> obbPoints;
+    obbPoints->DeepCopy(obbPolydata->GetPoints());
+
+    // Use a quad to find centers of OBB faces
+    vtkNew<vtkQuad> aQuad;
+
+    std::vector<std::array<double, 3>> facePoints(4);
+    std::vector<std::array<double, 3>> centers(3);
+    std::vector<std::array<double, 3>> endPoints(3);
+
+    std::array<double, 3> center;
+    std::array<double, 3> endPoint;
+    std::array<double, 3> point0, point1, point2, point3, point4, point5, point6,
+          point7;
+    std::array<double, 3> radii;
+    std::array<double, 3> lengths;
+
+    // Transfer the points to std::array's
+    obbPoints->GetPoint(0, point0.data());
+    obbPoints->GetPoint(1, point1.data());
+    obbPoints->GetPoint(2, point2.data());
+    obbPoints->GetPoint(3, point3.data());
+    obbPoints->GetPoint(4, point4.data());
+    obbPoints->GetPoint(5, point5.data());
+    obbPoints->GetPoint(6, point6.data());
+    obbPoints->GetPoint(7, point7.data());
+
+    // x face
+    // ids[0] = 2; ids[1] = 3; ids[2] = 7; ids[3] = 6;
+    facePoints[0] = point2;
+    facePoints[1] = point3;
+    facePoints[2] = point7;
+    facePoints[3] = point6;
+    radii[0] = MakeAQuad(facePoints, centers[0]);
+    MakeAQuad(facePoints, centers[0]);
+    // ids[0] = 0; ids[1] = 4; ids[2] = 5; ids[3] = 1;
+    facePoints[0] = point0;
+    facePoints[1] = point4;
+    facePoints[2] = point5;
+    facePoints[3] = point1;
+    MakeAQuad(facePoints, endPoints[0]);
+    lengths[0] = std::sqrt(vtkMath::Distance2BetweenPoints(centers[0].data(),
+                           endPoints[0].data())) / 2.0;
+
+    // y face
+    // ids[0] = 0; ids[1] = 1; ids[2] = 2; ids[3] = 3;
+    facePoints[0] = point0;
+    facePoints[1] = point1;
+    facePoints[2] = point2;
+    facePoints[3] = point3;
+    radii[1] = MakeAQuad(facePoints, centers[1]);
+    // ids[0] = 4; ids[1] = 6; ids[2] = 7; ids[3] = 5;
+    facePoints[0] = point4;
+    facePoints[1] = point6;
+    facePoints[2] = point7;
+    facePoints[3] = point5;
+    MakeAQuad(facePoints, endPoints[1]);
+    lengths[1] = std::sqrt(vtkMath::Distance2BetweenPoints(centers[1].data(),
+                                                           endPoints[1].data())) / 2.0;
+
+    // z face
+    // ids[0] = 0; ids[1] = 2; ids[2] = 6; ids[3] = 4;
+    facePoints[0] = point0;
+    facePoints[1] = point2;
+    facePoints[2] = point6;
+    facePoints[3] = point4;
+    MakeAQuad(facePoints, centers[2]);
+    radii[2] =
+          std::sqrt(vtkMath::Distance2BetweenPoints(point0.data(), point2.data())) /
+          2.0;
+    // ids[0] = 1; ids[1] = 3; ids[2] = 7; ids[3] = 5;
+    facePoints[0] = point1;
+    facePoints[1] = point5;
+    facePoints[2] = point7;
+    facePoints[3] = point3;
+    MakeAQuad(facePoints, endPoints[2]);
+    lengths[2] = std::sqrt(vtkMath::Distance2BetweenPoints(centers[2].data(),
+                                                           endPoints[2].data())) / 2.0;
+
+    // Find long axis
+    int longAxis = -1;
+    double length = VTK_DOUBLE_MIN;
+    for (auto i = 0; i < 3; ++i)
+    {
+        if (lengths[i] > length)
+        {
+          length = lengths[i];
+          longAxis = i;
+        }
+    }
+    //double radius = radii[longAxis];
+    center = centers[longAxis];
+    endPoint = endPoints[longAxis];
+
+    //check assignment of head & axis point
+    mitk::Point3D axis_point;
+    mitk::Point3D head;
+    if(endPoint[1]>center[1])
+    {
+        axis_point = static_cast<mitk::Point3D>(endPoint);
+        head = static_cast<mitk::Point3D>(center);
+    }
+    else
+    {
+        head = static_cast<mitk::Point3D>(endPoint);
+        axis_point = static_cast<mitk::Point3D>(center);
+    }
+
+    // The X axis is a vector from start to end
+    mitk::Vector3D direction;
+    vtkMath::Subtract(axis_point, head, direction);
+    vtkMath::Norm(&direction[0]);
+
+
+    return direction;
+
 }
 
 mitk::Gizmo::HandleType mitk::Gizmo::GetHandleFromPointDataValue(double value)

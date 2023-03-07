@@ -73,6 +73,10 @@ namespace mitk
       NoHandle //< to indicate picking failure
     };
 
+    Vector3D m_AxisX;
+    Vector3D m_AxisY;
+    Vector3D m_AxisZ;
+
     //! Conversion for any kind of logging/debug/... purposes
     static std::string HandleTypeToString(HandleType type);
 
@@ -115,9 +119,13 @@ namespace mitk
     //! Setup the gizmo to follow any ModifiedEvents of the given geometry.
     //! The object will adapt and update itself in function of the geometry's changes.
     void FollowGeometry(BaseGeometry *geom);
+    void FollowGeometryCylinder(BaseData *basedata);
+    void OnFollowedGeometryCylinderModified();
 
     //! The ITK callback to receive modified events of the followed geometry
     void OnFollowedGeometryModified();
+
+    static void ComputeOrientation(mitk::Vector3D* direction, Vector3D &axisX, Vector3D &axisY, Vector3D &axisZ);
 
     //! Determine the nature of the the given vertex id.
     //! Can be used after picking a vertex id to determine what part of the
@@ -136,6 +144,7 @@ namespace mitk
     //!
     //! \return DataNode::Pointer containing the node used for vizualization of our gizmo
     static DataNode::Pointer AddGizmoToNode(DataNode *node, DataStorage *storage);
+    static DataNode::Pointer AddGizmoToNodeCylinder(DataNode *node, DataStorage *storage);
 
     //! Convenience removal of gizmo from given node
     //! \param node The node being currently manipulated
@@ -162,12 +171,17 @@ namespace mitk
     //! Creates a vtkPolyData representing the parameters defining the gizmo.
     vtkSmartPointer<vtkPolyData> BuildGizmo();
 
+    static double MakeAQuad(std::vector<std::array<double, 3>> points, std::array<double, 3>& center);
+    static mitk::Vector3D ExtractOrientationFromSurface(vtkSmartPointer<vtkPolyData> polyData);
+
   private:
     Point3D m_Center;
-    Vector3D m_AxisX;
-    Vector3D m_AxisY;
-    Vector3D m_AxisZ;
+
+    Vector3D m_AxisXorig;
+    Vector3D m_AxisYorig;
+    Vector3D m_AxisZorig;
     Vector3D m_Radius;
+    mitk::Vector3D m_direction;
 
     bool m_AllowTranslation;
     bool m_AllowRotation;

@@ -3,6 +3,7 @@ set(H_FILES
   src/mitkGizmoObjectFactory.h
   include/mitkGizmo.h
   include/mitkGizmoInteractor.h
+  include/mitkGizmoInteractorCylinder.h
 )
 
 set(CPP_FILES
@@ -10,6 +11,7 @@ set(CPP_FILES
   mitkGizmoInteractor.cpp
   mitkGizmoObjectFactory.cpp
   mitkGizmoMapper2D.cpp
+  mitkGizmoInteractorCylinder.cpp
 )
 
 set(RESOURCE_FILES
