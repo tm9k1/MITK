@@ -987,7 +987,7 @@ void mitk::SurfaceInterpolationController::AddLabelSetConnection(unsigned int la
       auto previousLayerID = workingImage->GetActiveLayer();
       workingImage->SetActiveLayer(layerID);
       auto activeLabelSet = workingImage->GetLabelSet(layerID);
-      activeLabelSet->RemoveLabelEvent += mitk::MessageDelegate<mitk::SurfaceInterpolationController>(
+      activeLabelSet->RemoveLabelEvent += mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
         this, &mitk::SurfaceInterpolationController::OnRemoveLabel);
       activeLabelSet->ActiveLabelEvent += mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
             this, &mitk::SurfaceInterpolationController::OnActiveLabel);
@@ -1011,7 +1011,7 @@ void mitk::SurfaceInterpolationController::AddLabelSetConnection()
     {
       auto workingImage = dynamic_cast<mitk::LabelSetImage*>(m_SelectedSegmentation);
       auto activeLabelSet = workingImage->GetActiveLabelSet();
-      activeLabelSet->RemoveLabelEvent += mitk::MessageDelegate<mitk::SurfaceInterpolationController>(
+      activeLabelSet->RemoveLabelEvent += mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
         this, &mitk::SurfaceInterpolationController::OnRemoveLabel);
       workingImage->GetActiveLabelSet()->ActiveLabelEvent += mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
             this, &mitk::SurfaceInterpolationController::OnActiveLabel);
@@ -1029,7 +1029,7 @@ void mitk::SurfaceInterpolationController::AddLabelSetConnection()
 void mitk::SurfaceInterpolationController::RemoveLabelSetConnection(mitk::LabelSetImage* labelSetImage, unsigned int layerID)
 {
   labelSetImage->SetActiveLayer(layerID);
-  labelSetImage->GetActiveLabelSet()->RemoveLabelEvent -= mitk::MessageDelegate<mitk::SurfaceInterpolationController>(
+  labelSetImage->GetActiveLabelSet()->RemoveLabelEvent -= mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
     this, &mitk::SurfaceInterpolationController::OnRemoveLabel);
   // labelSetImage->GetActiveLabelSet()->ActiveLabelEvent -= mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
   //       this, &mitk::SurfaceInterpolationController::OnActiveLabel);
@@ -1045,7 +1045,7 @@ void mitk::SurfaceInterpolationController::RemoveLabelSetConnection()
     try
     {
       auto workingImage = dynamic_cast<mitk::LabelSetImage*>(m_SelectedSegmentation);
-      workingImage->GetActiveLabelSet()->RemoveLabelEvent -= mitk::MessageDelegate<mitk::SurfaceInterpolationController>(
+      workingImage->GetActiveLabelSet()->RemoveLabelEvent -= mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
         this, &mitk::SurfaceInterpolationController::OnRemoveLabel);
       workingImage->GetActiveLabelSet()->ActiveLabelEvent -= mitk::MessageDelegate1<mitk::SurfaceInterpolationController, mitk::Label::PixelType>(
             this, &mitk::SurfaceInterpolationController::OnActiveLabel);
@@ -1059,7 +1059,7 @@ void mitk::SurfaceInterpolationController::RemoveLabelSetConnection()
   }
 }
 
-void mitk::SurfaceInterpolationController::OnRemoveLabel()
+void mitk::SurfaceInterpolationController::OnRemoveLabel(mitk::Label::PixelType removedLabelValue)
 {
   if (m_SelectedSegmentation != nullptr)
   {
