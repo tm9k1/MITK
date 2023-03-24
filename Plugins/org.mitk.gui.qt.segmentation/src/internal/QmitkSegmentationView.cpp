@@ -467,11 +467,6 @@ mitk::LabelSetImage* QmitkSegmentationView::GetCurrentSegmentation() const
   return segmentation;
 }
 
-void QmitkSegmentationView::OnLabelSetWidgetReset()
-{
-  this->ValidateSelectionInput();
-}
-
 /**********************************************************************/
 /* private                                                            */
 /**********************************************************************/
@@ -1038,6 +1033,10 @@ void QmitkSegmentationView::ValidateSelectionInput()
    //TODO END temporary interpolator deactivation
 
     m_Controls->multiLabelWidget->SetMultiLabelSegmentation(dynamic_cast<mitk::LabelSetImage*>(workingNode->GetData()));
+  }
+  else
+  {
+    m_Controls->multiLabelWidget->SetMultiLabelSegmentation(nullptr);
   }
 
   toolSelectionBoxesEnabled &= numberOfLabels > 1;
