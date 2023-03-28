@@ -23,7 +23,7 @@ found in the LICENSE file.
 #include <mitkCameraController.h>
 #include <mitkLabelSetImage.h>
 #include <mitkLabelSetImageHelper.h>
-#include <mitkLabelSetIOHelper.h>
+#include <mitkMultiLabelIOHelper.h>
 #include <mitkManualPlacementAnnotationRenderer.h>
 #include <mitkNodePredicateSubGeometry.h>
 #include <mitkSegmentationInteractionEvents.h>
@@ -350,7 +350,7 @@ void QmitkSegmentationView::OnNewSegmentation()
 
   const auto labelSetPreset = this->GetDefaultLabelSetPreset();
 
-  if (labelSetPreset.empty() || !mitk::LabelSetIOHelper::LoadLabelSetImagePreset(labelSetPreset, newLabelSetImage))
+  if (labelSetPreset.empty() || !mitk::MultiLabelIOHelper::LoadLabelSetImagePreset(labelSetPreset, newLabelSetImage))
   {
     auto newLabel = mitk::LabelSetImageHelper::CreateNewLabel(newLabelSetImage);
 
