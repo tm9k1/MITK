@@ -337,6 +337,8 @@ void mitk::LabelSetImage::AddLabelSetToLayer(const unsigned int layerIdx, const 
 
   this->RegisterLabelSet(clonedLabelSet);
 
+  std::vector<SpatialGroupIndexType> addedGroups;
+
   if (layerIdx < m_LabelSetContainer.size())
   {
     if (m_LabelSetContainer[layerIdx].IsNotNull())
@@ -356,12 +358,18 @@ void mitk::LabelSetImage::AddLabelSetToLayer(const unsigned int layerIdx, const 
       this->RegisterLabelSet(defaultLabelSet);
       this->ReinitMaps();
       m_LabelSetContainer.push_back(defaultLabelSet);
-      this->m_GroupAddedMessage.Send(m_LabelSetContainer.size()-1);
+      addedGroups.emplace_back(m_LabelSetContainer.size() - 1);
     }
     m_LabelSetContainer.push_back(clonedLabelSet);
-    this->OnGroupAdded(layerIdx);
+    addedGroups.emplace_back(m_LabelSetContainer.size() - 1);
   }
+
   this->ReinitMaps();
+
+  for (auto groupID : addedGroups)
+  {
+    this->m_GroupAddedMessage.Send(groupID);
+  }
 }
 
 void mitk::LabelSetImage::SetActiveLayer(unsigned int layer)
@@ -1031,7 +1039,6 @@ void mitk::LabelSetImage::OnLabelRemoved(LabelValueType labelValue)
 void mitk::LabelSetImage::OnGroupAdded(SpatialGroupIndexType groupIndex)
 {
   auto result = m_GroupToLabelMap.insert(std::make_pair(groupIndex, LabelValueVectorType()));
-  if (!result.second) mitkThrow() << "Invalid state of LabelSetImage. A GroupAdded signal was triggered for a group that alread exists. GroupIndex: " << groupIndex;
 
   this->m_GroupAddedMessage.Send(groupIndex);
 }
@@ -1345,9 +1352,9 @@ private:
   mitk::MultiLabelSegmentation::OverwriteStyle m_OverwriteStyle = mitk::MultiLabelSegmentation::OverwriteStyle::RegardLocks;
 };
 
-/**Helper function used by TransferLabelContent to allow the templating over different image dimensions in conjunction of AccessFixedPixelTypeByItk_n.*/
+/**Helper function used by TransferLabelContentAtTimeStep to allow the templating over different image dimensions in conjunction of AccessFixedPixelTypeByItk_n.*/
 template<unsigned int VImageDimension>
-void TransferLabelContentHelper(const itk::Image<mitk::Label::PixelType, VImageDimension>* itkSourceImage, mitk::Image* destinationImage,
+void TransferLabelContentAtTimeStepHelper(const itk::Image<mitk::Label::PixelType, VImageDimension>* itkSourceImage, mitk::Image* destinationImage,
   const mitk::LabelSet* destinationLabelSet, mitk::Label::PixelType sourceBackground, mitk::Label::PixelType destinationBackground,
   bool destinationBackgroundLocked, mitk::Label::PixelType sourceLabel, mitk::Label::PixelType newDestinationLabel, mitk::MultiLabelSegmentation::MergeStyle mergeStyle, mitk::MultiLabelSegmentation::OverwriteStyle overwriteStyle)
 {
@@ -1361,7 +1368,7 @@ void TransferLabelContentHelper(const itk::Image<mitk::Label::PixelType, VImageD
 
   if (!overlapping)
   {
-    mitkThrow() << "Invalid call of TransferLabelContent; sourceImage and destinationImage seem to have no overlapping image region.";
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; sourceImage and destinationImage seem to have no overlapping image region.";
   }
 
   typedef LabelTransferFunctor <mitk::Label::PixelType, mitk::Label::PixelType, mitk::Label::PixelType> LabelTransferFunctorType;
@@ -1381,10 +1388,58 @@ void TransferLabelContentHelper(const itk::Image<mitk::Label::PixelType, VImageD
   transferFilter->Update();
 }
 
+void mitk::TransferLabelContentAtTimeStep(
+  const Image* sourceImage, Image* destinationImage, const mitk::LabelSet* destinationLabelSet, const TimeStepType timeStep, mitk::Label::PixelType sourceBackground,
+  mitk::Label::PixelType destinationBackground, bool destinationBackgroundLocked, std::vector<std::pair<Label::PixelType, Label::PixelType> > labelMapping,
+  MultiLabelSegmentation::MergeStyle mergeStyle, MultiLabelSegmentation::OverwriteStyle overwriteStlye)
+{
+  if (nullptr == sourceImage)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; sourceImage must not be null.";
+  }
+  if (nullptr == destinationImage)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; destinationImage must not be null.";
+  }
+  if (nullptr == destinationLabelSet)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; destinationLabelSet must not be null";
+  }
+
+  if (sourceImage == destinationImage && labelMapping.size() > 1)
+  {
+    MITK_DEBUG << "Warning. Using TransferLabelContentAtTimeStep or TransferLabelContent with equal source and destination and more then on label to transfer, can lead to wrong results. Please see documentation and verify that the usage is OK.";
+  }
+
+  Image::ConstPointer sourceImageAtTimeStep = SelectImageByTimeStep(sourceImage, timeStep);
+  Image::Pointer destinationImageAtTimeStep = SelectImageByTimeStep(destinationImage, timeStep);
+
+  if (nullptr == sourceImageAtTimeStep)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; sourceImage does not have the requested time step: " << timeStep;
+  }
+  if (nullptr == destinationImageAtTimeStep)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; destinationImage does not have the requested time step: " << timeStep;
+  }
+
+  for (const auto& [sourceLabel, newDestinationLabel] : labelMapping)
+  {
+    if (LabelSetImage::UnlabeledLabelValue!=newDestinationLabel && nullptr == destinationLabelSet->GetLabel(newDestinationLabel))
+    {
+      mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep. Defined destination label does not exist in destinationImage. newDestinationLabel: " << newDestinationLabel;
+    }
+
+    AccessFixedPixelTypeByItk_n(sourceImageAtTimeStep, TransferLabelContentAtTimeStepHelper, (Label::PixelType), (destinationImageAtTimeStep, destinationLabelSet, sourceBackground, destinationBackground, destinationBackgroundLocked, sourceLabel, newDestinationLabel, mergeStyle, overwriteStlye));
+    destinationLabelSet->ModifyLabelEvent.Send(newDestinationLabel);
+  }
+  destinationImage->Modified();
+}
+
 void mitk::TransferLabelContent(
   const Image* sourceImage, Image* destinationImage, const mitk::LabelSet* destinationLabelSet, mitk::Label::PixelType sourceBackground,
   mitk::Label::PixelType destinationBackground, bool destinationBackgroundLocked, std::vector<std::pair<Label::PixelType, Label::PixelType> > labelMapping,
-  MultiLabelSegmentation::MergeStyle mergeStyle, MultiLabelSegmentation::OverwriteStyle overwriteStlye, const TimeStepType timeStep)
+  MultiLabelSegmentation::MergeStyle mergeStyle, MultiLabelSegmentation::OverwriteStyle overwriteStlye)
 {
   if (nullptr == sourceImage)
   {
@@ -1394,43 +1449,28 @@ void mitk::TransferLabelContent(
   {
     mitkThrow() << "Invalid call of TransferLabelContent; destinationImage must not be null.";
   }
-  if (nullptr == destinationLabelSet)
+
+  const auto sourceTimeStepCount = sourceImage->GetTimeGeometry()->CountTimeSteps();
+  if (sourceTimeStepCount != destinationImage->GetTimeGeometry()->CountTimeSteps())
   {
-    mitkThrow() << "Invalid call of TransferLabelContent; destinationLabelSet must not be null";
+    mitkThrow() << "Invalid call of TransferLabelContent; images have no equal number of time steps.";
   }
 
-  Image::ConstPointer sourceImageAtTimeStep = SelectImageByTimeStep(sourceImage, timeStep);
-  Image::Pointer destinationImageAtTimeStep = SelectImageByTimeStep(destinationImage, timeStep);
-
-  if (nullptr == sourceImageAtTimeStep)
+  for (mitk::TimeStepType i = 0; i < sourceTimeStepCount; ++i)
   {
-    mitkThrow() << "Invalid call of TransferLabelContent; sourceImage does not have the requested time step: " << timeStep;
+    TransferLabelContentAtTimeStep(sourceImage, destinationImage, destinationLabelSet, i, sourceBackground,
+      destinationBackground, destinationBackgroundLocked, labelMapping, mergeStyle, overwriteStlye);
   }
-  if (nullptr == destinationImageAtTimeStep)
-  {
-    mitkThrow() << "Invalid call of TransferLabelContent; destinationImage does not have the requested time step: " << timeStep;
-  }
-
-  for (const auto& [sourceLabel, newDestinationLabel] : labelMapping)
-  {
-    if (LabelSetImage::UnlabeledLabelValue!=newDestinationLabel && nullptr == destinationLabelSet->GetLabel(newDestinationLabel))
-    {
-      mitkThrow() << "Invalid call of TransferLabelContent. Defined destination label does not exist in destinationImage. newDestinationLabel: " << newDestinationLabel;
-    }
-
-    AccessFixedPixelTypeByItk_n(sourceImageAtTimeStep, TransferLabelContentHelper, (Label::PixelType), (destinationImageAtTimeStep, destinationLabelSet, sourceBackground, destinationBackground, destinationBackgroundLocked, sourceLabel, newDestinationLabel, mergeStyle, overwriteStlye));
-    destinationLabelSet->ModifyLabelEvent.Send(newDestinationLabel);
-  }
-  destinationImage->Modified();
 }
 
-void mitk::TransferLabelContent(
-  const LabelSetImage* sourceImage, LabelSetImage* destinationImage, std::vector<std::pair<Label::PixelType, Label::PixelType> > labelMapping,
-  MultiLabelSegmentation::MergeStyle mergeStyle, MultiLabelSegmentation::OverwriteStyle overwriteStlye, const TimeStepType timeStep)
+void mitk::TransferLabelContentAtTimeStep(
+  const LabelSetImage* sourceImage, LabelSetImage* destinationImage, const TimeStepType timeStep,
+  std::vector<std::pair<Label::PixelType, Label::PixelType> > labelMapping,
+  MultiLabelSegmentation::MergeStyle mergeStyle, MultiLabelSegmentation::OverwriteStyle overwriteStlye)
 {
   if (nullptr == sourceImage)
   {
-    mitkThrow() << "Invalid call of TransferLabelContent; sourceImage must not be null.";
+    mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep; sourceImage must not be null.";
   }
 
   const auto destinationLabelSet = destinationImage->GetLabelSet(destinationImage->GetActiveLayer());
@@ -1439,11 +1479,37 @@ void mitk::TransferLabelContent(
   {
     if (LabelSetImage::UnlabeledLabelValue != mappingElement.first && !sourceImage->ExistLabel(mappingElement.first, sourceImage->GetActiveLayer()))
     {
-      mitkThrow() << "Invalid call of TransferLabelContent. Defined source label does not exist in sourceImage. SourceLabel: " << mappingElement.first;
+      mitkThrow() << "Invalid call of TransferLabelContentAtTimeStep. Defined source label does not exist in sourceImage. SourceLabel: " << mappingElement.first;
     }
   }
 
-  TransferLabelContent(sourceImage, destinationImage, destinationLabelSet, LabelSetImage::UnlabeledLabelValue, LabelSetImage::UnlabeledLabelValue, destinationImage->GetUnlabeledLabelLock(),
-    labelMapping, mergeStyle, overwriteStlye, timeStep);
+  TransferLabelContentAtTimeStep(sourceImage, destinationImage, destinationLabelSet, timeStep, LabelSetImage::UnlabeledLabelValue, LabelSetImage::UnlabeledLabelValue, destinationImage->GetUnlabeledLabelLock(),
+    labelMapping, mergeStyle, overwriteStlye);
+}
+
+void mitk::TransferLabelContent(
+  const LabelSetImage* sourceImage, LabelSetImage* destinationImage,
+  std::vector<std::pair<Label::PixelType, Label::PixelType> > labelMapping,
+  MultiLabelSegmentation::MergeStyle mergeStyle, MultiLabelSegmentation::OverwriteStyle overwriteStlye)
+{
+  if (nullptr == sourceImage)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContent; sourceImage must not be null.";
+  }
+  if (nullptr == destinationImage)
+  {
+    mitkThrow() << "Invalid call of TransferLabelContent; destinationImage must not be null.";
+  }
+
+  const auto sourceTimeStepCount = sourceImage->GetTimeGeometry()->CountTimeSteps();
+  if (sourceTimeStepCount != destinationImage->GetTimeGeometry()->CountTimeSteps())
+  {
+    mitkThrow() << "Invalid call of TransferLabelContent; images have no equal number of time steps.";
+  }
+
+  for (mitk::TimeStepType i = 0; i < sourceTimeStepCount; ++i)
+  {
+    TransferLabelContentAtTimeStep(sourceImage, destinationImage, i, labelMapping, mergeStyle, overwriteStlye);
+  }
 }
 

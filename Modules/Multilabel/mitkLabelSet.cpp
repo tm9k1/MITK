@@ -30,7 +30,7 @@ mitk::LabelSet::~LabelSet()
 mitk::LabelSet::LabelSet(const LabelSet &other)
   : itk::Object(),
     m_LookupTable(other.GetLookupTable()->Clone()),
-    m_ActiveLabelValue(other.GetActiveLabel()->GetValue()),
+    m_ActiveLabelValue(other.m_ActiveLabelValue),
     m_Layer(other.GetLayer())
 {
   // clone Labels
@@ -56,7 +56,6 @@ std::vector<mitk::LabelSet::LabelValueType> mitk::LabelSet::GetUsedLabelValues()
   }
   else
   {
-
     for (auto [value, label] : this->m_LabelContainer)
     {
       result.emplace_back(value);
@@ -319,12 +318,15 @@ bool mitk::Equal(const mitk::LabelSet &leftHandSide, const mitk::LabelSet &right
   }
 
   // m_ActiveLabel;
-  returnValue = mitk::Equal(*leftHandSide.GetActiveLabel(), *rightHandSide.GetActiveLabel(), eps, verbose);
-  if (!returnValue)
+  if (leftHandSide.GetActiveLabel() != rightHandSide.GetActiveLabel())
   {
-    MITK_INFO(verbose) << "Active label not equal.";
-    return returnValue;
-    ;
+    returnValue = mitk::Equal(*leftHandSide.GetActiveLabel(), *rightHandSide.GetActiveLabel(), eps, verbose);
+    if (!returnValue)
+    {
+      MITK_INFO(verbose) << "Active label not equal.";
+      return returnValue;
+      ;
+    }
   }
 
   // m_Layer;
