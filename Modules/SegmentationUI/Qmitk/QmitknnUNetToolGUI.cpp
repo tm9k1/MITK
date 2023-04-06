@@ -1023,7 +1023,7 @@ void QmitknnUNetToolGUI::OnModalitiesNumberChanged(int num)
   {
     QmitkSingleNodeSelectionWidget *multiModalBox = new QmitkSingleNodeSelectionWidget(this);
     mitk::nnUNetTool::Pointer tool = this->GetConnectedToolAs<mitk::nnUNetTool>();
-    multiModalBox->SetDataStorage(tool->GetDataStorage());
+    multiModalBox->SetDataStorage(tool->GetDataStorage(), false);
     multiModalBox->SetInvalidInfo("Select corresponding modalities");
     multiModalBox->SetNodePredicate(m_MultiModalPredicate);
     multiModalBox->setObjectName(QString("multiModal_" + QString::number(m_Modalities.size() + 1)));

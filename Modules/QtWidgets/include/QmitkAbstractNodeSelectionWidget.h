@@ -40,7 +40,7 @@ public:
   *
   * @par dataStorage      A pointer to the data storage to set.
   */
-  void SetDataStorage(mitk::DataStorage* dataStorage);
+  void SetDataStorage(mitk::DataStorage *dataStorage, bool hasListener = true);
 
   /**
   * Sets the node predicate and updates the widget, according to the node predicate.
