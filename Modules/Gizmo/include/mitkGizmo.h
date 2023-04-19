@@ -184,6 +184,9 @@ namespace mitk
     mitk::Vector3D m_direction;
 
     bool m_AllowTranslation;
+    bool m_AllowRotationX;
+    bool m_AllowRotationY;
+    bool m_AllowRotationZ;
     bool m_AllowRotation;
     bool m_AllowScaling;
 

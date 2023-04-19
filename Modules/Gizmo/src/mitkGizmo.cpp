@@ -280,6 +280,12 @@ mitk::DataNode::Pointer mitk::Gizmo::AddGizmoToNode(DataNode *node, DataStorage 
 mitk::Gizmo::Gizmo()
   : Surface(), m_AllowTranslation(true), m_AllowRotation(true), m_AllowScaling(true), m_GizmoRemover(new GizmoRemover())
 {
+  m_AllowRotationX = true;
+  m_AllowRotationY = false;
+  m_AllowRotationZ = true;
+  m_AllowTranslation = true;
+  m_AllowScaling = false;
+
   m_Center.Fill(0);
 
   m_AxisX.Fill(0);
@@ -513,26 +519,28 @@ vtkSmartPointer<vtkPolyData> mitk::Gizmo::BuildGizmo()
 
   vtkSmartPointer<vtkAppendPolyData> appender = vtkSmartPointer<vtkAppendPolyData>::New();
 
+  MITK_INFO << "Scaling/Translation: " << m_AllowScaling << m_AllowTranslation;
+
   appender->AddInputData(BuildAxis(m_Center,
                                    m_AxisX,
                                    longestAxis,
-                                   m_AllowRotation,
+                                   m_AllowRotationX,
                                    m_AllowTranslation ? MoveAlongAxisX : NoHandle,
-                                   m_AllowRotation ? RotateAroundAxisX : NoHandle,
+                                   m_AllowRotationX ? RotateAroundAxisX : NoHandle,
                                    m_AllowScaling ? ScaleX : NoHandle));
   appender->AddInputData(BuildAxis(m_Center,
                                    m_AxisY,
                                    longestAxis,
-                                   m_AllowRotation,
+                                   m_AllowRotationY,
                                    m_AllowTranslation ? MoveAlongAxisY : NoHandle,
-                                   m_AllowRotation ? RotateAroundAxisY : NoHandle,
+                                   m_AllowRotationY ? RotateAroundAxisY : NoHandle,
                                    m_AllowScaling ? ScaleY : NoHandle));
   appender->AddInputData(BuildAxis(m_Center,
                                    m_AxisZ,
                                    longestAxis,
-                                   m_AllowRotation,
+                                   m_AllowRotationZ,
                                    m_AllowTranslation ? MoveAlongAxisZ : NoHandle,
-                                   m_AllowRotation ? RotateAroundAxisZ : NoHandle,
+                                   m_AllowRotationZ ? RotateAroundAxisZ : NoHandle,
                                    m_AllowScaling ? ScaleZ : NoHandle));
 
   auto sphereSource = vtkSmartPointer<vtkSphereSource>::New();
