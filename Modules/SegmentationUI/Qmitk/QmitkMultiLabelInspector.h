@@ -161,7 +161,14 @@ public Q_SLOTS:
   * @pre AllowLabeModification must be set to true.*/
   mitk::Label* AddNewLabel();
 
-  /** @brief Removes the first currently selected label of the segmentation.
+  /** @brief Removes the first currently selected label instance of the segmentation.
+  * If no label is selected
+  * nothing will happen.
+  *
+  * @pre AllowLabeModification must be set to true.*/
+  void DeleteLabelInstance();
+
+  /** @brief Delete the first currently selected label and all its instances of the segmentation.
   * If no label is selected
   * nothing will happen.
   *
