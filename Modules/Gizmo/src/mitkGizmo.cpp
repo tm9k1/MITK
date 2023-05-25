@@ -378,52 +378,59 @@ namespace
     // huge and tiny objects at the same time, but when the users zooms in on his
     // object of interest, the gizmo will always have the same relative size.
     const double shaftRadius = halflength * 0.02;
-    const double arrowHeight = shaftRadius * 6;
     const int tubeSides = 15;
 
-    // poly data appender to collect cones and tube that make up the axis
-    vtkSmartPointer<vtkAppendPolyData> axisSource = vtkSmartPointer<vtkAppendPolyData>::New();
-
-    // build two cones at the end of axis
-    for (double sign = -1.0; sign < 3.0; sign += 2)
+    bool drawAxis = true;
+    vtkSmartPointer<vtkAppendPolyData> axisSource;
+    if (drawAxis)
     {
-      vtkSmartPointer<vtkConeSource> cone = vtkConeSource::New();
-      // arrow tips at 110% of radius
-      cone->SetCenter(center[0] + sign * axis[0] * (halflength * 1.1 + arrowHeight * 0.5),
-                      center[1] + sign * axis[1] * (halflength * 1.1 + arrowHeight * 0.5),
-                      center[2] + sign * axis[2] * (halflength * 1.1 + arrowHeight * 0.5));
-      cone->SetDirection(sign * axis[0], sign * axis[1], sign * axis[2]);
-      cone->SetRadius(shaftRadius * 3);
-      cone->SetHeight(arrowHeight);
-      cone->SetResolution(tubeSides);
-      cone->CappingOn();
-      cone->Update();
-      AssignScalarValueTo(cone->GetOutput(), vertexValueScale);
-      axisSource->AddInputData(cone->GetOutput());
+        const double arrowHeight = shaftRadius * 6;
+
+        // poly data appender to collect cones and tube that make up the axis
+        axisSource = vtkSmartPointer<vtkAppendPolyData>::New();
+
+        // build two cones at the end of axis
+        for (double sign = -1.0; sign < 3.0; sign += 2)
+        {
+          vtkSmartPointer<vtkConeSource> cone = vtkConeSource::New();
+          // arrow tips at 110% of radius
+          cone->SetCenter(center[0] + sign * axis[0] * (halflength * 1.1 + arrowHeight * 0.5),
+                          center[1] + sign * axis[1] * (halflength * 1.1 + arrowHeight * 0.5),
+                          center[2] + sign * axis[2] * (halflength * 1.1 + arrowHeight * 0.5));
+          cone->SetDirection(sign * axis[0], sign * axis[1], sign * axis[2]);
+          cone->SetRadius(shaftRadius * 3);
+          cone->SetHeight(arrowHeight);
+          cone->SetResolution(tubeSides);
+          cone->CappingOn();
+          cone->Update();
+          AssignScalarValueTo(cone->GetOutput(), vertexValueScale);
+          axisSource->AddInputData(cone->GetOutput());
+        }
+
+        // build the axis itself (as a tube around the line defining the axis)
+        vtkSmartPointer<vtkPolyData> shaftSkeleton = vtkSmartPointer<vtkPolyData>::New();
+        vtkSmartPointer<vtkPoints> shaftPoints = vtkSmartPointer<vtkPoints>::New();
+        shaftPoints->InsertPoint(0, (center - axis * halflength * 1.1).GetDataPointer());
+        shaftPoints->InsertPoint(1, (center + axis * halflength * 1.1).GetDataPointer());
+        shaftSkeleton->SetPoints(shaftPoints);
+
+        vtkSmartPointer<vtkCellArray> shaftLines = vtkSmartPointer<vtkCellArray>::New();
+        vtkIdType shaftLinePoints[] = {0, 1};
+        shaftLines->InsertNextCell(2, shaftLinePoints);
+        shaftSkeleton->SetLines(shaftLines);
+
+        vtkSmartPointer<vtkTubeFilter> shaftSource = vtkSmartPointer<vtkTubeFilter>::New();
+        shaftSource->SetInputData(shaftSkeleton);
+        shaftSource->SetNumberOfSides(tubeSides);
+        shaftSource->SetVaryRadiusToVaryRadiusOff();
+        shaftSource->SetRadius(shaftRadius);
+        shaftSource->Update();
+        AssignScalarValueTo(shaftSource->GetOutput(), vertexValueAxis);
+
+        axisSource->AddInputData(shaftSource->GetOutput());
+        axisSource->Update();
     }
 
-    // build the axis itself (as a tube around the line defining the axis)
-    vtkSmartPointer<vtkPolyData> shaftSkeleton = vtkSmartPointer<vtkPolyData>::New();
-    vtkSmartPointer<vtkPoints> shaftPoints = vtkSmartPointer<vtkPoints>::New();
-    shaftPoints->InsertPoint(0, (center - axis * halflength * 1.1).GetDataPointer());
-    shaftPoints->InsertPoint(1, (center + axis * halflength * 1.1).GetDataPointer());
-    shaftSkeleton->SetPoints(shaftPoints);
-
-    vtkSmartPointer<vtkCellArray> shaftLines = vtkSmartPointer<vtkCellArray>::New();
-    vtkIdType shaftLinePoints[] = {0, 1};
-    shaftLines->InsertNextCell(2, shaftLinePoints);
-    shaftSkeleton->SetLines(shaftLines);
-
-    vtkSmartPointer<vtkTubeFilter> shaftSource = vtkSmartPointer<vtkTubeFilter>::New();
-    shaftSource->SetInputData(shaftSkeleton);
-    shaftSource->SetNumberOfSides(tubeSides);
-    shaftSource->SetVaryRadiusToVaryRadiusOff();
-    shaftSource->SetRadius(shaftRadius);
-    shaftSource->Update();
-    AssignScalarValueTo(shaftSource->GetOutput(), vertexValueAxis);
-
-    axisSource->AddInputData(shaftSource->GetOutput());
-    axisSource->Update();
 
     vtkSmartPointer<vtkTubeFilter> ringSource; // used after if block, so declare it here
     if (drawRing)
@@ -485,7 +492,11 @@ namespace
 
     // assemble axis and ring
     vtkSmartPointer<vtkAppendPolyData> appenderGlobal = vtkSmartPointer<vtkAppendPolyData>::New();
-    appenderGlobal->AddInputData(axisSource->GetOutput());
+    if (drawAxis)
+    {
+        appenderGlobal->AddInputData(axisSource->GetOutput());
+    }
+
     if (drawRing)
     {
       appenderGlobal->AddInputData(ringSource->GetOutput());
