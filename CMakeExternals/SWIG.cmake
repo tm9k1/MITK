@@ -27,8 +27,9 @@ if(MITK_USE_SWIG)
 
       # swig.exe available as pre-built binary on Windows:
       ExternalProject_Add(${proj}
-        URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/swigwin-${SWIG_TARGET_VERSION}.zip
-        URL_MD5 "009926b512aee9318546bdd4c7eab6f9"
+        #URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/swigwin-${SWIG_TARGET_VERSION}.zip
+        URL https://netcologne.dl.sourceforge.net/project/swig/swigwin/swigwin-4.2.0/swigwin-4.2.0.zip
+        #URL_MD5 "009926b512aee9318546bdd4c7eab6f9"
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
         INSTALL_COMMAND ""
