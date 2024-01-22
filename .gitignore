@@ -40,6 +40,13 @@ tramp
 .project
 .settings/
 
+## PyCharm
+.idea/
+
+## Python
+*.pyc
+__pycache__/
+
 # Org-mode
 .org-id-locations
 *_archive

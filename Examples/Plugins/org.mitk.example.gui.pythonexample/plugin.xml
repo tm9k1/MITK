@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+
+  <extension point="org.blueberry.ui.views">
+    <view id="org.mitk.views.pythonexample"
+          name="Python Example"
+          class="PythonExample"
+	  category="org.mitk.views.example"
+          icon="resources/icon.xpm" />
+  </extension>
+
+</plugin>

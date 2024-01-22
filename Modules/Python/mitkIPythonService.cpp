@@ -19,7 +19,7 @@ mitk::IPythonService::~IPythonService()
 std::string mitk::IPythonService::ForceLoadModule()
 {
   std::string ret = "Load python module";
-  MITK_INFO << ret;
+  MITK_DEBUG << ret;
   return ret;
 }
 
