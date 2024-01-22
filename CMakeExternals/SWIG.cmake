@@ -6,7 +6,7 @@ if(MITK_USE_SWIG)
     message(FATAL_ERROR "SWIG_DIR variable is defined but corresponds to non-existing directory")
   endif()
 
-  set(SWIG_TARGET_VERSION 4.0.2)
+  set(SWIG_TARGET_VERSION 4.2.0)
   set(proj SWIG)
   if(WIN32)
     set(proj_DEPENDENCIES)
@@ -46,8 +46,9 @@ if(MITK_USE_SWIG)
 
       ExternalProject_add(${proj}
         LIST_SEPARATOR ${sep}
-        URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/swig-${SWIG_TARGET_VERSION}.tar.gz
-        URL_MD5 7c3e46cb5af2b469722cafa0d91e127b
+        #URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/swig-${SWIG_TARGET_VERSION}.tar.gz
+        URL https://github.com/swig/swig/archive/refs/tags/v4.2.0.tar.gz
+        #URL_MD5 7c3e46cb5af2b469722cafa0d91e127b
         # Switching to Git would require additional prerequisites:
         #   - autotools-dev
         #   - automake
