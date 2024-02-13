@@ -6,6 +6,7 @@ set(CPP_FILES
   mitkCoreObjectFactory.cpp
   mitkCoreServices.cpp
   mitkException.cpp
+  DataManagement/shape.cpp
 
   Algorithms/mitkBaseDataSource.cpp
   Algorithms/mitkClippedSurfaceBoundsCalculator.cpp

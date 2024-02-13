@@ -24,14 +24,14 @@ mark_as_advanced(
 
 set(libraries
   MitkCore
-  MitkCLCore
-  MitkCLUtilities
-  ITKCommon
-  MitkSegmentation
-  MitkMultilabel
-  MitkDICOM
-  MitkDICOMImageIO
-  MitkRT
+  #MitkCLCore
+  #MitkCLUtilities
+  #ITKCommon
+  #MitkSegmentation
+  #MitkMultilabel
+  #MitkDICOM
+  #MitkDICOMImageIO
+  #MitkRT
 )
 
 if(MITK_USE_MatchPoint)
@@ -42,7 +42,7 @@ endif()
 
 
 
-mitkSwigPrepareFiles(pyMITK MITK.i ${libraries})
+mitkSwigPrepareFiles(pyMITK MITKWRAP.i ${libraries})
 
 set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_GLOBAL_FLAGS} -features autodoc=1 -keyword)
 
@@ -52,7 +52,7 @@ endif()
 
 set(CMAKE_SWIG_OUTDIR ${MITK_CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 set(UseSWIG_TARGET_NAME_PREFERENCE STANDARD)
-swig_add_library(pyMITK LANGUAGE python SOURCES MITK.i)
+swig_add_library(pyMITK LANGUAGE python SOURCES MITKWRAP.i)
 set_property(TARGET pyMITK PROPERTY FOLDER "${MITK_ROOT_FOLDER}/Wrapping")
 target_link_libraries(pyMITK ${libraries})
 
