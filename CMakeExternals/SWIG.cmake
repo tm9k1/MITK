@@ -48,7 +48,7 @@ if(MITK_USE_SWIG)
       ExternalProject_add(${proj}
         LIST_SEPARATOR ${sep}
         #URL ${MITK_THIRDPARTY_DOWNLOAD_PREFIX_URL}/swig-${SWIG_TARGET_VERSION}.tar.gz
-        URL https://github.com/swig/swig/archive/refs/tags/v4.2.0.tar.gz
+        URL https://deac-ams.dl.sourceforge.net/project/swig/swig/swig-4.2.0/swig-4.2.0.tar.gz
         #URL_MD5 7c3e46cb5af2b469722cafa0d91e127b
         # Switching to Git would require additional prerequisites:
         #   - autotools-dev
