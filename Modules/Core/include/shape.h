@@ -1,11 +1,17 @@
 #ifndef SHAPE_H
 #define SHAPE_H
+
+#include <itkDataObject.h>
 #include <MitkCoreExports.h>
+#include <mitkCommon.h>
+#include "mitkProportionalTimeGeometry.h"
+
 namespace mitk
 {
-  class MITKCORE_EXPORT Shape
+  class MITKCORE_EXPORT Shape: public itk::DataObject
   {
   public:
+    mitkClassMacroItkParent(Shape, itk::DataObject);
     //static int nshapes;
     Shape() = default;// { nshapes++; }
     virtual ~Shape() = default; //{ nshapes--; }
@@ -21,9 +27,13 @@ namespace mitk
     double radius;
 
   public:
+    mitkClassMacro(Circle, Shape);
+    itkCloneMacro(Self);
     Circle(double r);// : radius(r) {}
     double area() override;
     double perimeter() override;
+    mitk::ProportionalTimeGeometry::Pointer area_vec();
+    
   };
 
   class MITKCORE_EXPORT Square : public Shape

@@ -26,7 +26,7 @@ set(libraries
   MitkCore
   #MitkCLCore
   #MitkCLUtilities
-  #ITKCommon
+  ITKCommon
   #MitkSegmentation
   #MitkMultilabel
   #MitkDICOM
