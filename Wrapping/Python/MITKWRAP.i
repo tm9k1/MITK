@@ -78,14 +78,13 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
 
 %typemap(out) mitk::Image::Pointer {
     unsigned int dim = $1->GetDimension();
-    std::cout << "dim: " << dim << std::endl;
     auto* writeAccess = new mitk::ImageWriteAccessor($1);
     void* mitkBufferPtr = writeAccess->GetData();
     std::cout << "pixel type: " << $1->GetPixelType().GetComponentTypeAsString()<< std::endl;
     std::cout << "pixel component: " << $1->GetPixelType().GetComponentType()<< std::endl;
     std::cout << "numpy type: "<< MakePixelTypeFromTypeID((int)$1->GetPixelType().GetComponentType())<< std::endl;;
-    std::vector<unsigned int> size;
-    for (int i = 0; i < dim; ++i)
+    std::vector<npy_intp> size;
+    for (unsigned int i = 0; i < dim; ++i)
     {
         size.push_back($1->GetDimension(i));
     }
@@ -95,11 +94,7 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
         size.push_back( $1->GetPixelType().GetNumberOfComponents() );
     }
     std::reverse(size.begin(), size.end());
-    npy_intp shape[size.size()];//= {112, 122};
-    for(int i = 0; i < size.size(); ++i ) 
-        shape[i] = size.data()[i];
-    
-    $result = PyArray_SimpleNewFromData(dim, shape, 
+    $result = PyArray_SimpleNewFromData(dim, size.data(), 
                 MakePixelTypeFromTypeID((int)$1->GetPixelType().GetComponentType()),
                 mitkBufferPtr);
     //PyArray_ENABLEFLAGS((PyArrayObject*)$result, NPY_ARRAY_OWNDATA);
