@@ -189,6 +189,21 @@ endif(MITK_XVFB_TESTING)
 set(MITK_CUSTOM_REVISION_DESC "" CACHE STRING "Override MITK revision description")
 mark_as_advanced(MITK_CUSTOM_REVISION_DESC)
 
+set(MITK_CUSTOM_PRODUCT_NAME "" CACHE STRING "Override MITK product name")
+mark_as_advanced(MITK_CUSTOM_PRODUCT_NAME)
+
+option(MITK_APPS_SHOWVIEWTOOLBAR "Use this to enable or disable the view bar when starting MITK GUI Applications" ON)
+mark_as_advanced(MITK_APPS_SHOWVIEWTOOLBAR)
+
+option(MITK_APPS_SHOWPERSPECTIVETOOLBAR "Use this to enable or disable the perspective bar when starting MITK GUI Applications" OFF)
+mark_as_advanced(MITK_APPS_SHOWPERSPECTIVETOOLBAR)
+
+set(MITK_APPS_VIEWEXCLUDELIST "" CACHE STRING "Enter a list of view IDs to be excluded in the view bar and menus, separated by semicolons")
+mark_as_advanced(MITK_APPS_VIEWEXCLUDELIST)
+
+set(MITK_APPS_PERSPECTIVEEXCLUDELIST "" CACHE STRING "Enter a list of perspective IDs to be excluded in the view bar and menus, separated by semicolons")
+mark_as_advanced(MITK_APPS_PERSPECTIVEEXCLUDELIST)
+
 set_property(GLOBAL PROPERTY MITK_EXTERNAL_PROJECTS "")
 
 include(CMakeExternals/ExternalProjectList.cmake)
@@ -1366,6 +1381,7 @@ configure_file(${MITK_SOURCE_DIR}/CMake/ToolGUIExtensionITKFactory.cpp.in
 
 configure_file(mitkVersion.h.in ${MITK_BINARY_DIR}/mitkVersion.h)
 configure_file(mitkConfig.h.in ${MITK_BINARY_DIR}/mitkConfig.h)
+configure_file(mitkAppModifications.h.in ${MITK_BINARY_DIR}/mitkAppModifications.h)
 
 set(IPFUNC_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Utilities/ipFunc)
 set(UTILITIES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Utilities)

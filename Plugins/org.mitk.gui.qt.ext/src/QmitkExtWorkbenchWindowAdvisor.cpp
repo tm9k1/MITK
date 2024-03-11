@@ -61,6 +61,7 @@ found in the LICENSE file.
 
 #include <itkConfigure.h>
 #include <mitkVersion.h>
+#include <mitkAppModifications.h>
 #include <mitkIDataStorageService.h>
 #include <mitkIDataStorageReference.h>
 #include <mitkDataStorageEditorInput.h>
@@ -539,6 +540,19 @@ void QmitkExtWorkbenchWindowAdvisor::PostWindowCreate()
   // very bad hack...
   berry::IWorkbenchWindow::Pointer window = this->GetWindowConfigurer()->GetWindow();
   QMainWindow* mainWindow = qobject_cast<QMainWindow*> (window->GetShell()->GetControl());
+
+  if (std::string(MITK_APPS_SHOWPERSPECTIVETOOLBAR).compare("ON")==0)
+    ShowPerspectiveToolbar(true);
+  else
+    ShowPerspectiveToolbar(false);
+
+  if (std::string(MITK_APPS_SHOWVIEWTOOLBAR).compare("ON")==0)
+    ShowViewToolbar(true);
+  else
+    ShowViewToolbar(false);
+
+  SetViewExcludeList(QString(MITK_APPS_VIEWEXCLUDELIST).split(";").toList());
+  SetPerspectiveExcludeList(QString(MITK_APPS_PERSPECTIVEEXCLUDELIST).split(";").toList());
 
   if (!windowIcon.isEmpty())
   {
@@ -1253,9 +1267,13 @@ QString QmitkExtWorkbenchWindowAdvisor::ComputeTitle()
     activeEditor = lastActiveEditor.Lock();
   }
 
-  QString title;
+  QString title = MITK_CUSTOM_PRODUCT_NAME;
   berry::IProduct::Pointer product = berry::Platform::GetProduct();
-  if (product.IsNotNull())
+  if (product.IsNotNull() and !title.isEmpty())
+  {
+    SetProductName(title);
+  }
+  else if(product.IsNotNull())
   {
     title = product->GetName();
   }
