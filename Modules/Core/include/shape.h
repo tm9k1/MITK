@@ -1,20 +1,20 @@
 #ifndef SHAPE_H
 #define SHAPE_H
 
-#include <itkDataObject.h>
+#include <itkMacro.h>
+#include <itkObject.h>
 #include <MitkCoreExports.h>
 #include <mitkCommon.h>
-#include "mitkProportionalTimeGeometry.h"
 
 namespace mitk
 {
-  class MITKCORE_EXPORT Shape: public itk::DataObject
+  class MITKCORE_EXPORT Shape: public itk::Object
   {
   public:
-    mitkClassMacroItkParent(Shape, itk::DataObject);
+    mitkClassMacroItkParent(Shape, itk::Object);
     //static int nshapes;
     Shape() = default;// { nshapes++; }
-    virtual ~Shape() = default; //{ nshapes--; }
+    virtual ~Shape() /*= default;*/{ MITK_INFO << "shape orignal destructor"; }
     double x, y;
     void move(double dx, double dy);
     virtual double area() = 0;
@@ -32,7 +32,6 @@ namespace mitk
     Circle(double r);// : radius(r) {}
     double area() override;
     double perimeter() override;
-    mitk::ProportionalTimeGeometry::Pointer area_vec();
     
   };
 
@@ -42,9 +41,15 @@ namespace mitk
     double width;
 
   public:
-    Square(double w);// : width(w) {}
+    mitkClassMacro(Square, Shape);
+    mitkNewMacro1Param(Self,double);
+    
     double area() override;
     double perimeter() override;
+  protected:
+    Square(double w);
+    ~Square(){MITK_INFO << "Square destructor";};
+
   };
 
 }

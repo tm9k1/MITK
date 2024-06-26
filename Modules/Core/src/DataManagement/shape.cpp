@@ -36,11 +36,3 @@ double mitk::Square::perimeter()
 {
   return 4*width;
 }
-
-mitk::ProportionalTimeGeometry::Pointer mitk::Circle::area_vec()
-{
-  mitk::ProportionalTimeGeometry::Pointer m_Geo2;
-  m_Geo2 = mitk::ProportionalTimeGeometry::New();
-  m_Geo2->Initialize(2);
-  return m_Geo2;
-}

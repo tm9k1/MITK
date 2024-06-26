@@ -40,6 +40,7 @@ mitk::Image::Image()
     m_CompleteData(nullptr),
     m_ImageStatistics(nullptr)
 {
+  MITK_INFO << "image constructor...";
   m_Dimensions = new unsigned int[MAX_IMAGE_DIMENSIONS];
   FILL_C_ARRAY(m_Dimensions, MAX_IMAGE_DIMENSIONS, 0u);
 
@@ -86,6 +87,7 @@ mitk::Image::Image(const Image &other)
 
 mitk::Image::~Image()
 {
+  MITK_INFO <<  "image destructor";
   this->Clear();
 
   m_ReferenceCount = 3;

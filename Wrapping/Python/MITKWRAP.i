@@ -116,9 +116,9 @@
         return ptr;
     }
 
-    std::shared_ptr<ImageWrapper> createShared()
+    std::shared_ptr<ImageWrapper> createSharedImage()
     {
-        return std::shared_ptr<ImageWrapper>(new ImageWrapper());
+        return std::make_shared<ImageWrapper>();
     }
 
     std::shared_ptr<TestClass> createSharedTestClass(std::string test)
@@ -131,6 +131,38 @@
         auto mitkImage = mitk::IOUtil::Load<mitk::Image>(filename);
         return std::shared_ptr<mitk::Image>(mitkImage.GetPointer());
     }*/
+}
+%ignore mitk::Shape::move;
+%ignore mitk::Shape::~Shape;
+%extend mitk::Square {
+                public:
+                ~Square(){std::cout << "Square replace destructor"<< std::endl;
+                self->UnRegister();}
+                void test_print(){std::cout << "test print"<< std::endl;}
+}
+
+
+// %typemap(out) mitk::Square::Pointer {
+//         std::cout << "Square::Pointerr" <<std::endl;
+//         // get the raw pointer from the smart pointer
+//         mitk::Square * ptr = $1;
+//         // always tell SWIG_NewPointerObj we're the owner
+//         $result = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), $descriptor(mitk::Square *), SWIG_POINTER_NEW | 0);
+//         //$result = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), SWIGTYPE_p_mitk__Square, SWIG_POINTER_NEW | 1);
+//         // register the object, it it exists
+//         if (ptr) {
+//                 ptr->Register();
+//         }
+// }
+
+%inline{
+PyObject* GetSquare()
+{
+    auto result = mitk::Square::New(10);
+    result->Register();
+    PyObject* resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_mitk__Square, SWIG_POINTER_NEW | 1 );
+    return resultobj;
+}
 }
 
 %include <shape.h>
