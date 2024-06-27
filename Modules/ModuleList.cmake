@@ -40,8 +40,8 @@ set(MITK_MODULES
   QtOverlays
   DICOMUI
   Remeshing
-  Python
-  QtPython
+  #Python
+
   Persistence
   RT
   RTUI

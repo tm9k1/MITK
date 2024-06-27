@@ -1,5 +1,4 @@
 %{
-
 #include <mitkBaseData.h>
 #include <mitkIOUtil.h>
 #include <mitkSlicedData.h>
@@ -8,6 +7,7 @@
 #include <mitkChannelDescriptor.h>
 #include <mitkPixelType.h>
 #include <mitkIntensityQuantifier.h>
+#include <mitkBaseGeometry.h>
 
 // SWIG Doesn't wrap namespaces. This leads to some problems, if the namespaces are not used.
 using mitk::DataStorage;

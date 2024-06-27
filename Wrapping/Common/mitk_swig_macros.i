@@ -52,7 +52,7 @@
 %extend itk::SmartPointer< nspace ## :: ## classname ## ::Self> {
   %pythoncode %{
       def _GetListOfValidItems(self):
-        return [str(k) for k in self.GetClassHierarchy() if str(k) in convertion_list.keys() ]
+        return [str(k).replace("class itk::","") for k in self.GetClassHierarchy() if str(k).replace("class itk::","") in convertion_list.keys() ]
   %}
   %pythoncode %{
     def __getattr__(self, item):
@@ -124,6 +124,9 @@
 
   // Declaring that this class is a smart-pointer class, in order to handle
   // online upcasting where necessary (for example python)
+  %feature("smartptr", noblock=1) classname { classname ## ::Pointer }
+  %feature("smartptr", noblock=1) nspace ##:: ## classname { nspace ## :: ## classname ## ::Pointer }
+  %feature("smartptr", noblock=1) nspace ##:: ## classname { classname ## ::Pointer }
   %feature("smartptr", noblock=1) nspace ##:: ## classname { itk::SmartPointer<nspace ## :: ## classname ## ::Self> }
 %enddef
 
@@ -151,6 +154,9 @@
 
   MITKSWIG_ADD_CLASS( classname, classinclude, nspace )
 
+  //class classname ## ;
+  //class classname ## ::Pointer;
+
   class nspace ## :: ## classname ## ;
   class nspace ## :: ## classname ## ::Pointer;
 
@@ -173,9 +179,10 @@
 
   MITKSWIG_ADD_CLASS( classname, classinclude, nspace )
 
-
+  // Defining only the original classname
+  // If the ::Pointer is also defined, smartpointer won't work
   class nspace ## :: ## classname ## ;
-  class nspace ## :: ## classname ## ::Pointer;
+  //class nspace ## :: ## classname ## ::Pointer;
 
   // It is important to first define the Vectors and
   // then define the Smartpointer. Otherwise a SWIG-bug ...
@@ -204,6 +211,24 @@
   typedef nspace ## :: ## classname classname ## ;
 
   class nspace ## :: ## classname ## ;
+
+  MITKSWIG_POINTERVECTOR(classname, classinclude, nspace)
+%enddef
+
+//
+// SWIG_ADD_NONOBJECT_CLASS is a helper macro in order to do
+// all important stuff before an mitk::Class is included.
+// Requires the name of the class as it is in c++ as classname
+// and the include file, in which the class is defined.
+// It is assumed that the class is somehow inherited from
+// mitk::BaseData, and supports smartpointers.
+//
+%define SWIG_ADD_NONOBJECT_TEMPLATE_CLASS(classname, classinclude, nspace)
+  %include < ## classinclude ## >
+  MITKSWIG_ADD_CLASS( classname, classinclude, nspace )
+
+  //%template(classname) templateArgs;
+  //class nspace ## :: ## classname ## ;
 
   MITKSWIG_POINTERVECTOR(classname, classinclude, nspace)
 %enddef
