@@ -39,24 +39,24 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
 {
    switch (componentTypeID)
    {
-      case TypeDefinitions::ComponentTypeUInt8 :
-      return NPY_USHORT;
-      case TypeDefinitions::ComponentTypeInt8 :
-      return NPY_SHORT;
-      case TypeDefinitions::ComponentTypeUInt16 :
-      return NPY_USHORT;
-      case TypeDefinitions::ComponentTypeInt16 :
-      return NPY_SHORT;
-      case TypeDefinitions::ComponentTypeUInt32 :
-      return NPY_UINT;
-      case TypeDefinitions::ComponentTypeInt32 :
-      return NPY_INT;
-      case TypeDefinitions::ComponentTypeFloat :
-      return NPY_FLOAT;
-      case TypeDefinitions::ComponentTypeDouble :
-      return NPY_DOUBLE;
-    default:
-      return NPY_DOUBLE;
+        case TypeDefinitions::ComponentTypeUInt8 :
+            return NPY_USHORT;
+        case TypeDefinitions::ComponentTypeInt8 :
+            return NPY_SHORT;
+        case TypeDefinitions::ComponentTypeUInt16 :
+            return NPY_USHORT;
+        case TypeDefinitions::ComponentTypeInt16 :
+            return NPY_SHORT;
+        case TypeDefinitions::ComponentTypeUInt32 :
+            return NPY_UINT;
+        case TypeDefinitions::ComponentTypeInt32 :
+            return NPY_INT;
+        case TypeDefinitions::ComponentTypeFloat :
+            return NPY_FLOAT;
+        case TypeDefinitions::ComponentTypeDouble :
+            return NPY_DOUBLE;
+        default:
+            return NPY_DOUBLE;
    }
 }
 
@@ -73,36 +73,36 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
 
 %define MITK_CLASS_SWIG_MACRO(namespace, class_name)
         
-        %typemap(out) namespace ## :: ## class_name ## *, namespace ## :: ## class_name & {
-                std::cout << "class_name *, class_name &" <<std::endl;
-                $result = SWIG_NewPointerObj(SWIG_as_voidptr($1), $1_descriptor, 1);
-                /*if ($1) {
-                        $1->Register();
-                }*/
+    %typemap(out) namespace ## :: ## class_name ## *, namespace ## :: ## class_name & {
+        std::cout << "class_name *, class_name &" <<std::endl;
+        $result = SWIG_NewPointerObj(SWIG_as_voidptr($1), $1_descriptor, 1);
+        /*if ($1) {
+                $1->Register();
+        }*/
+    }
+
+    %typemap(out) namespace ## :: ## class_name ## ::Pointer 
+    {
+        std::cout << "namespace##::##class_name::Pointer" <<std::endl;
+        namespace##::##class_name * ptr = $1.GetPointer();
+        $result = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), $descriptor(namespace::class_name *), 1);                
+        if (ptr) {
+            ptr->Register();
         }
+    }
 
-        %typemap(out) namespace ## :: ## class_name ## ::Pointer 
-        {
-                std::cout << "namespace##::##class_name::Pointer" <<std::endl;
-                namespace##::##class_name * ptr = $1.GetPointer();
-                $result = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), $descriptor(namespace::class_name *), 1);                
-                if (ptr) {
-                        ptr->Register();
-                }
-        }
-
-        %extend namespace ## :: ## class_name
-        {
-                public:
-                ~class_name() 
-                {       std::cout << "namespace##::##class_name replace destructor" << std::endl;
-                        self->UnRegister(); 
-                };
-        }
+    %extend namespace ## :: ## class_name
+    {
+        public:
+        ~class_name()   
+        {   std::cout << "namespace##::##class_name replace destructor" << std::endl;
+            self->UnRegister(); 
+        };
+    }
 
 
-        %ignore namespace ## :: ## class_name ## :: ## ~class_name ## ;
-        %ignore namespace ## :: ## class_name ## _Pointer;
+    %ignore namespace ## :: ## class_name ## :: ## ~class_name ## ;
+    %ignore namespace ## :: ## class_name ## _Pointer;
 
 %enddef
 
@@ -113,62 +113,61 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
 
 %inline{
 
-        mitk::Image::Pointer GetImage() //for test, delete later
-        {
-                std::string filename = "/home/a178n/DKFZ/MITK_ws3/example_ct.nii.gz";
-                auto mitkImage = mitk::IOUtil::Load<mitk::Image>(filename);
-                return mitkImage;
-        }
+    mitk::Image::Pointer GetImage() //for test, delete later
+    {
+        std::string filename = "/home/a178n/DKFZ/MITK_ws3/example_ct.nii.gz";
+        auto mitkImage = mitk::IOUtil::Load<mitk::Image>(filename);
+        return mitkImage;
+    }
 
-        mitk::Image* GetImagePtr() //for test, delete later
-        {
-                std::string filename = "/home/a178n/DKFZ/MITK_ws3/example_ct.nii.gz";
-                auto mitkImage = mitk::IOUtil::Load<mitk::Image>(filename);
-                return mitkImage.GetPointer();
-        }
+    mitk::Image* GetImagePtr() //for test, delete later
+    {
+        std::string filename = "/home/a178n/DKFZ/MITK_ws3/example_ct.nii.gz";
+        auto mitkImage = mitk::IOUtil::Load<mitk::Image>(filename);
+        return mitkImage.GetPointer();
+    }
 
 }
 
 %extend mitk::IOUtil 
 {
-        public:
-        static void imsave(const mitk::Image* image, const std::string& filePath)
-        {
-                mitk::IOUtil::Save(image, filePath);
-        }
+    public:
+    static void imsave(const mitk::Image* image, const std::string& filePath)
+    {
+        mitk::IOUtil::Save(image, filePath);
+    }
 }
 
 %extend mitk::Image
 {
-        public:
-        PyObject* GetAsNumpy() 
+    public:
+    PyObject* GetAsNumpy() 
+    {
+        unsigned int dim = self->GetDimension();
+        auto* readAccess = new mitk::ImageReadAccessor(self);
+        const void* mitkBufferPtr = readAccess->GetData();
+        std::cout << "n dims: "<< dim << std::endl;
+        std::cout << "pixel type: " << self->GetPixelType().GetComponentTypeAsString()<< std::endl;
+        std::cout << "pixel component: " << self->GetPixelType().GetComponentType()<< std::endl;
+        std::cout << "numpy type: "<< MakePixelTypeFromTypeID((int)self->GetPixelType().GetComponentType())<< std::endl;;
+        std::vector<npy_intp> size;
+        for (unsigned int i = 0; i < dim; ++i)
         {
-                unsigned int dim = self->GetDimension();
-                std::cout << "n dims: "<< dim << std::endl;
-                auto* readAccess = new mitk::ImageReadAccessor(self);
-                const void* mitkBufferPtr = readAccess->GetData();
-                std::cout << "pixel type: " << self->GetPixelType().GetComponentTypeAsString()<< std::endl;
-                std::cout << "pixel component: " << self->GetPixelType().GetComponentType()<< std::endl;
-                std::cout << "numpy type: "<< MakePixelTypeFromTypeID((int)self->GetPixelType().GetComponentType())<< std::endl;;
-                std::vector<npy_intp> size;
-                for (unsigned int i = 0; i < dim; ++i)
-                {
-                size.push_back(self->GetDimension(i));
-                }
-                if (self->GetPixelType().GetNumberOfComponents() > 1) // if the image is a vector just treat is as another dimension
-                {    
-                size.push_back(self->GetPixelType().GetNumberOfComponents() );
-                }
-                std::reverse(size.begin(), size.end());
-                PyObject* result = PyArray_SimpleNewFromData(dim, size.data(), 
-                        MakePixelTypeFromTypeID((int)self->GetPixelType().GetComponentType()),
-                        const_cast<void*>(mitkBufferPtr));
-                //PyArray_ENABLEFLAGS((PyArrayObject*)result, NPY_ARRAY_OWNDATA);
-                delete readAccess;
-                return result;
+            size.push_back(self->GetDimension(i));
         }
+        if (self->GetPixelType().GetNumberOfComponents() > 1) // if the image is a vector just treat is as another dimension
+        {    
+            size.push_back(self->GetPixelType().GetNumberOfComponents() );
+        }
+        std::reverse(size.begin(), size.end());
+        PyObject* result = PyArray_SimpleNewFromData(dim, size.data(), 
+                MakePixelTypeFromTypeID((int)self->GetPixelType().GetComponentType()),
+                const_cast<void*>(mitkBufferPtr));
+        //PyArray_ENABLEFLAGS((PyArrayObject*)result, NPY_ARRAY_OWNDATA);
+        delete readAccess;
+        return result;
+    }
 }
-
 
 %ignore mitk::IOUtil::Save;
 
@@ -179,7 +178,7 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
 %template(imread) mitk::IOUtil::Load<mitk::Image>;
 
 %pythoncode %{
-def GetName():
-    return 'pyMITK'
+    def GetName():
+        return 'pyMITK'
 %}
 
