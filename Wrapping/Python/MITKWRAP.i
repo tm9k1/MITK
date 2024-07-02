@@ -11,6 +11,7 @@
 %include "numpy.i"
 
 #define MITKCORE_EXPORT
+#define ITKCommon_EXPORT
 %{
 #include <mitkImage.h>
 #include <mitkPixelType.h>
@@ -18,6 +19,9 @@
 #include <mitkIOUtil.h>
 #include <mitkImageReadAccessor.h>
 using namespace mitk;
+
+using itk::LightObject;
+using itk::SmartPointer;
 
 struct TypeDefinitions
 {
@@ -80,7 +84,7 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
         %typemap(out) namespace ## :: ## class_name ## ::Pointer 
         {
                 std::cout << "namespace##::##class_name::Pointer" <<std::endl;
-                namespace##::##class_name * ptr = $1;
+                namespace##::##class_name * ptr = $1.GetPointer();
                 $result = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), $descriptor(namespace::class_name *), 1);                
                 if (ptr) {
                         ptr->Register();
@@ -90,8 +94,10 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
         %extend namespace ## :: ## class_name
         {
                 public:
-                ~class_name() {std::cout << "namespace##::##class_name replace destructor" << std::endl;
-                        self->UnRegister(); };
+                ~class_name() 
+                {       std::cout << "namespace##::##class_name replace destructor" << std::endl;
+                        self->UnRegister(); 
+                };
         }
 
 
@@ -166,6 +172,8 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
 
 %ignore mitk::IOUtil::Save;
 
+%include <itkMacro.h>
+%include <mitkCommon.h>
 %include <mitkImage.h>
 %include <mitkIOUtil.h>
 %template(imread) mitk::IOUtil::Load<mitk::Image>;
