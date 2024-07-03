@@ -13,13 +13,11 @@
 #define MITKCORE_EXPORT
 #define ITKCommon_EXPORT
 %{
-#include <mitkImage.h>
-#include <mitkPixelType.h>
-#include <mitkChannelDescriptor.h>
 #include <mitkIOUtil.h>
 #include <mitkImageReadAccessor.h>
 using namespace mitk;
 
+using itk::DataObject;
 using itk::LightObject;
 using itk::SmartPointer;
 
@@ -108,9 +106,6 @@ NPY_TYPES MakePixelTypeFromTypeID(int componentTypeID)
 
 MITK_CLASS_SWIG_MACRO(mitk, Image)
 
-%ignore mitk::Image::GetPixelType;
-%ignore mitk::Image::GetChannelDescriptor;
-
 %inline{
 
     mitk::Image::Pointer GetImage() //for test, delete later
@@ -127,15 +122,6 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
         return mitkImage.GetPointer();
     }
 
-}
-
-%extend mitk::IOUtil 
-{
-    public:
-    static void imsave(const mitk::Image* image, const std::string& filePath)
-    {
-        mitk::IOUtil::Save(image, filePath);
-    }
 }
 
 %extend mitk::Image
@@ -169,16 +155,23 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
     }
 }
 
+%ignore mitk::BaseData;
+%ignore mitk::SlicedData;
+%ignore mitk::Image::GetPixelType;
+%ignore mitk::Image::GetChannelDescriptor;
 %ignore mitk::IOUtil::Save;
+%rename(imsave) mitk::IOUtil::Save(const mitk::BaseData*, const std::string&, bool);
 
 %include <itkMacro.h>
 %include <mitkCommon.h>
+%include <mitkBaseData.h>
+%include <mitkSlicedData.h>
 %include <mitkImage.h>
 %include <mitkIOUtil.h>
+
 %template(imread) mitk::IOUtil::Load<mitk::Image>;
 
 %pythoncode %{
     def GetName():
         return 'pyMITK'
 %}
-
