@@ -56,4 +56,5 @@ set(MITK_MODULES
   PharmacokineticsUI
   DICOMPM
   ROI
+  Blosc2
 )
