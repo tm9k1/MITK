@@ -29,7 +29,7 @@ if(MITK_USE_lz4)
     ExternalProject_Add(${proj}
       LIST_SEPARATOR ${sep}
       GIT_REPOSITORY https://github.com/lz4/lz4.git
-      GIT_TAG v1.9.4
+      GIT_TAG 5ff839680134437dbf4678f3d0c7b371d84f4964 # v1.9.4 (2022-08-16)
       SOURCE_SUBDIR build/cmake
       CMAKE_GENERATOR ${gen}
       CMAKE_GENERATOR_PLATFORM ${gen_platform}
@@ -45,7 +45,7 @@ if(MITK_USE_lz4)
       DEPENDS ${proj_DEPENDENCIES}
     )
 
-    set(lz4_DIR "${ep_prefix}")
+    set(${proj}_DIR "${ep_prefix}/lib/cmake/lz4")
     mitkFunctionInstallExternalCMakeProject(${proj})
 
   else()
