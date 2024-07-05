@@ -16,6 +16,7 @@ mitkFunctionAddExternalProject(NAME DCMQI ON DEPENDS DCMTK ITK DOC "Use dcmqi in
 mitkFunctionAddExternalProject(NAME MatchPoint OFF ADVANCED DEPENDS Boost ITK DOC "Use the MatchPoint translation image registration library")
 mitkFunctionAddExternalProject(NAME nlohmann_json ON ADVANCED)
 mitkFunctionAddExternalProject(NAME httplib ON DEPENDS ZLIB)
+mitkFunctionAddExternalProject(NAME Blosc2 ON ADVANCED DEPENDS ZLIB lz4)
 
 if(MITK_USE_Qt6)
  mitkFunctionAddExternalProject(NAME Qt6Qwt6 ON ADVANCED DEPENDS Qt6)
