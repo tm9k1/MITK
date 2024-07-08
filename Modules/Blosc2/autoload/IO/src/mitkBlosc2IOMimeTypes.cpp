@@ -21,9 +21,8 @@ mitk::MitkBlosc2IOMimeTypes::MitkBlosc2MimeType::MitkBlosc2MimeType()
   this->AddExtension("b2frame");
   this->AddExtension("b2f");
   this->AddExtension("b2nd");
-  this->AddExtension("chunk");
 
-  this->SetCategory("Blosc2");
+  this->SetCategory(IOMimeTypes::CATEGORY_IMAGES());
   this->SetComment("Blosc2");
 }
 
@@ -31,12 +30,10 @@ bool mitk::MitkBlosc2IOMimeTypes::MitkBlosc2MimeType::AppliesTo(const std::strin
 {
   bool result = CustomMimeType::AppliesTo(path);
 
-  if (!fs::exists(path)) // T18572
+  if (!result || !fs::exists(path)) // T18572
     return result;
 
-  // TODO
-
-  return false; // TODO
+  return true;
 }
 
 mitk::MitkBlosc2IOMimeTypes::MitkBlosc2MimeType* mitk::MitkBlosc2IOMimeTypes::MitkBlosc2MimeType::Clone() const

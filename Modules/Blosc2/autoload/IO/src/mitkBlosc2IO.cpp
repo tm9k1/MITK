@@ -14,11 +14,137 @@ found in the LICENSE file.
 #include <mitkBlosc2IOMimeTypes.h>
 
 #include <mitkFileSystem.h>
-#include <mitkImage.h>
+#include <mitkImageWriteAccessor.h>
 
 #include <fstream>
 
 #include <blosc2.h>
+#include <b2nd.h>
+
+namespace Blosc2
+{
+  // RAII
+  struct LibraryEnvironment
+  {
+    LibraryEnvironment()
+    {
+      blosc2_init();
+    }
+
+    ~LibraryEnvironment()
+    {
+      blosc2_destroy();
+    }
+  };
+
+  void ThrowOnError(int rc)
+  {
+    if (rc < BLOSC2_ERROR_SUCCESS)
+      mitkThrow() << print_error(rc);
+  }
+}
+
+namespace
+{
+  // https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
+  mitk::PixelType CreatePixelType(std::string typestr)
+  {
+    if (typestr.size() < 3)
+      mitkThrow() << "Unexpected type string: \"" << typestr << "\"!";
+
+    if (typestr[0] == '>')
+      mitkThrow() << "Big-endian data types are not supported as pixel types in MITK!";
+
+    char type = typestr[1];
+    int size;
+
+    try
+    {
+      size = std::stoi(typestr.substr(2));
+    }
+    catch (const std::exception&)
+    {
+      mitkThrow() << "Unexpected type string (expected an integer at third position): \"" << typestr << "\"!";
+    }
+
+    switch (type)
+    {
+      case 'i':
+        switch (size)
+        {
+          case 1:
+            return mitk::MakeScalarPixelType<char>();
+          case 2:
+            return mitk::MakeScalarPixelType<short>();
+          case 4:
+            return mitk::MakeScalarPixelType<int>();
+          default:
+            mitkThrow() << "Unsupported signed integer size: " << size << '!';
+        }
+
+      case 'u':
+        switch (size)
+        {
+          case 1:
+            return mitk::MakeScalarPixelType<unsigned char>();
+          case 2:
+            return mitk::MakeScalarPixelType<unsigned short>();
+          case 4:
+            return mitk::MakeScalarPixelType<unsigned int>();
+          default:
+            mitkThrow() << "Unsupported unsigned integer size: " << size << '!';
+        }
+
+      case 'f':
+        switch (size)
+        {
+          case 4:
+            return mitk::MakeScalarPixelType<float>();
+          case 8:
+            return mitk::MakeScalarPixelType<double>();
+          default:
+            mitkThrow() << "Unsuppoted floating point size: " << size << '!';
+        }
+
+      default:
+        mitkThrow() << "Unsupported or unknown type character code: \"" << type << "\"!";
+    }
+  }
+
+  std::vector<unsigned int> GetDimensionsFromShape(const int64_t* shape, int8_t ndim, bool eliminateFlatDimensions = true)
+  {
+    int numFlatDimensions = 0;
+
+    if (eliminateFlatDimensions)
+    {
+      for (int i = 0; i < ndim; ++i)
+      {
+        if (shape[i] != 1)
+          break;
+
+        ++numFlatDimensions;
+      }
+    }
+
+    std::vector<unsigned int> dimensions;
+    dimensions.reserve(ndim - numFlatDimensions);
+
+    for (int i = ndim - 1; i >= numFlatDimensions; --i)
+      dimensions.push_back(static_cast<unsigned int>(shape[i]));
+
+    return dimensions;
+  }
+
+  int64_t CalculatePixelBufferSize(const mitk::PixelType& pixelType, const std::vector<unsigned int>& dimensions)
+  {
+    int64_t size = pixelType.GetSize();
+
+    for (auto dimension : dimensions)
+      size *= dimension;
+
+    return size;
+  }
+}
 
 mitk::Blosc2IO::Blosc2IO()
   : AbstractFileIO(Image::GetStaticNameOfClass(), MitkBlosc2IOMimeTypes::BLOSC2_MIMETYPE(), "Blosc2")
@@ -28,29 +154,57 @@ mitk::Blosc2IO::Blosc2IO()
 
 std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
 {
-  auto* stream = this->GetInputStream();
-  std::ifstream fileStream;
+  fs::path filename = this->GetInputLocation();
 
-  if (nullptr == stream)
+  if (filename.empty())
+    mitkThrow() << "Filename of Blosc2 file not set!";
+
+  if (!fs::exists(filename))
+    mitkThrow() << "File or directory \"" << filename << "\" does not exist!";
+
+  if (fs::is_directory(filename))
   {
-    auto filename = this->GetInputLocation();
+    filename = filename / "chunks.b2frame";
 
-    if (filename.empty() || !fs::exists(filename))
-      mitkThrow() << "Invalid or nonexistent file or directory name: \"" << filename << "\"!";
-
-    fileStream.open(filename); // TODO: Can be directory
-
-    if (!fileStream.is_open())
-      mitkThrow() << "Could not open file \"" << filename << "\" for reading!";
-
-    stream = &fileStream;
+    if (!fs::exists(filename))
+      mitkThrow() << "File \"" << filename << "\" does not exist!";
   }
 
-  auto result = Image::New();
+  Blosc2::LibraryEnvironment blosc2;
 
-  // TODO
+  // TODO: This is a first prototype implementation specifically for the NDim variant of Blosc2 based on a single example image...
 
-  return { result };
+  b2nd_array_t* array = nullptr;
+  Blosc2::ThrowOnError(b2nd_open(this->GetInputLocation().c_str(), &array));
+
+  try
+  {
+    Blosc2::ThrowOnError(b2nd_print_meta(array));
+
+    if (array->dtype_format != DTYPE_NUMPY_FORMAT)
+      mitkThrow() << "Unknown data type format (expected DTYPE_NUMPY_FORMAT [0]): " << array->dtype_format << "!";
+
+    auto pixelType = CreatePixelType(array->dtype);
+    auto dimensions = GetDimensionsFromShape(array->shape, array->ndim);
+    auto bufferSize = CalculatePixelBufferSize(pixelType, dimensions);
+
+    auto image = Image::New();
+    image->Initialize(pixelType, dimensions.size(), dimensions.data());
+
+    {
+      ImageWriteAccessor writeAccessor(image);
+      b2nd_to_cbuffer(array, writeAccessor.GetData(), bufferSize);
+    }
+
+    Blosc2::ThrowOnError(b2nd_free(array));
+
+    return { image };
+  }
+  catch (Exception& e)
+  {
+    b2nd_free(array);
+    mitkReThrow(e);
+  }
 }
 
 void mitk::Blosc2IO::Write()
