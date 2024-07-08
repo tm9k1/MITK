@@ -17,6 +17,7 @@ found in the LICENSE file.
 #include <mitkImageWriteAccessor.h>
 
 #include <fstream>
+#include <thread>
 
 #include <blosc2.h>
 #include <b2nd.h>
@@ -41,6 +42,12 @@ namespace Blosc2
   {
     if (rc < BLOSC2_ERROR_SUCCESS)
       mitkThrow() << print_error(rc);
+  }
+
+  void SuggestNumberOfThreads(unsigned int numThreads)
+  {
+    // Note: Can be overridden by the BLOSC_NTHREADS environment variable.
+    blosc2_set_nthreads(static_cast<int16_t>(std::min(numThreads, std::max(1U, std::thread::hardware_concurrency()))));
   }
 }
 
@@ -171,39 +178,60 @@ std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
   }
 
   Blosc2::LibraryEnvironment blosc2;
+  Blosc2::SuggestNumberOfThreads(4);
 
-  // TODO: This is a first prototype implementation specifically for the NDim variant of Blosc2 based on a single example image...
+  auto schunk = blosc2_schunk_open(this->GetInputLocation().c_str());
 
-  b2nd_array_t* array = nullptr;
-  Blosc2::ThrowOnError(b2nd_open(this->GetInputLocation().c_str(), &array));
+  if (schunk == nullptr)
+    mitkThrow() << "Could not open super-chunk from file \"" << this->GetInputLocation() << "\"!";
 
-  try
+  if (blosc2_meta_exists(schunk, "b2nd") != BLOSC2_ERROR_NOT_FOUND)
   {
-    Blosc2::ThrowOnError(b2nd_print_meta(array));
+    Blosc2::ThrowOnError(blosc2_schunk_free(schunk));
 
-    if (array->dtype_format != DTYPE_NUMPY_FORMAT)
-      mitkThrow() << "Unknown data type format (expected DTYPE_NUMPY_FORMAT [0]): " << array->dtype_format << "!";
+    b2nd_array_t* array = nullptr;
+    Blosc2::ThrowOnError(b2nd_open(this->GetInputLocation().c_str(), &array));
 
-    auto pixelType = CreatePixelType(array->dtype);
-    auto dimensions = GetDimensionsFromShape(array->shape, array->ndim);
-    auto bufferSize = CalculatePixelBufferSize(pixelType, dimensions);
-
-    auto image = Image::New();
-    image->Initialize(pixelType, dimensions.size(), dimensions.data());
-
+    try
     {
-      ImageWriteAccessor writeAccessor(image);
-      b2nd_to_cbuffer(array, writeAccessor.GetData(), bufferSize);
+      Blosc2::ThrowOnError(b2nd_print_meta(array));
+
+      if (array->dtype_format != DTYPE_NUMPY_FORMAT)
+        mitkThrow() << "Unknown data type format (expected DTYPE_NUMPY_FORMAT [0]): " << array->dtype_format << "!";
+
+      auto pixelType = CreatePixelType(array->dtype);
+      auto dimensions = GetDimensionsFromShape(array->shape, array->ndim);
+      auto bufferSize = CalculatePixelBufferSize(pixelType, dimensions);
+
+      auto image = Image::New();
+      image->Initialize(pixelType, dimensions.size(), dimensions.data());
+
+      {
+        ImageWriteAccessor writeAccessor(image);
+        b2nd_to_cbuffer(array, writeAccessor.GetData(), bufferSize);
+      }
+
+      Blosc2::ThrowOnError(b2nd_free(array));
+
+      return { image };
     }
-
-    Blosc2::ThrowOnError(b2nd_free(array));
-
-    return { image };
+    catch (Exception& e)
+    {
+      b2nd_free(array);
+      mitkReThrow(e);
+    }
   }
-  catch (Exception& e)
+  else
   {
-    b2nd_free(array);
-    mitkReThrow(e);
+    try
+    {
+      mitkThrow() << "MITK only supports Blosc2 NDim images!";
+    }
+    catch (Exception& e)
+    {
+      blosc2_schunk_free(schunk);
+      mitkReThrow(e);
+    }
   }
 }
 
