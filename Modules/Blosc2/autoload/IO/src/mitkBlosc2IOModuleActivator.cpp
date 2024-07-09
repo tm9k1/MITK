@@ -19,6 +19,11 @@ found in the LICENSE file.
 
 US_EXPORT_MODULE_ACTIVATOR(mitk::Blosc2IOModuleActivator)
 
+mitk::Blosc2IOModuleActivator::Blosc2IOModuleActivator()
+  : m_FileIO(std::make_unique<Blosc2IO>())
+{
+}
+
 void mitk::Blosc2IOModuleActivator::Load(us::ModuleContext* context)
 {
   auto mimeTypes = MitkBlosc2IOMimeTypes::Get();
@@ -28,8 +33,6 @@ void mitk::Blosc2IOModuleActivator::Load(us::ModuleContext* context)
 
   for (auto mimeType : mimeTypes)
     context->RegisterService(mimeType, props);
-
-  m_FileIOs.push_back(std::make_shared<Blosc2IO>());
 }
 
 void mitk::Blosc2IOModuleActivator::Unload(us::ModuleContext*)

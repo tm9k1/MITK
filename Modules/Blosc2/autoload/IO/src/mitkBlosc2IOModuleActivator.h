@@ -13,7 +13,6 @@ found in the LICENSE file.
 #include <usModuleActivator.h>
 
 #include <memory>
-#include <vector>
 
 namespace mitk
 {
@@ -22,7 +21,7 @@ namespace mitk
   class Blosc2IOModuleActivator : public us::ModuleActivator
   {
   public:
-    Blosc2IOModuleActivator() = default;
+    Blosc2IOModuleActivator();
     ~Blosc2IOModuleActivator() override = default;
 
     Blosc2IOModuleActivator(const Blosc2IOModuleActivator&) = delete;
@@ -32,6 +31,6 @@ namespace mitk
     void Unload(us::ModuleContext* context) override;
 
   private:
-    std::vector<std::shared_ptr<AbstractFileIO>> m_FileIOs;
+    std::unique_ptr<AbstractFileIO> m_FileIO;
   };
 }
