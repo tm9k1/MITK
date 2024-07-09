@@ -22,6 +22,9 @@ namespace mitk
   public:
     Blosc2IO();
 
+    ConfidenceLevel GetReaderConfidenceLevel() const override;
+    ConfidenceLevel GetWriterConfidenceLevel() const override;
+
     using AbstractFileReader::Read;
     void Write() override;
 

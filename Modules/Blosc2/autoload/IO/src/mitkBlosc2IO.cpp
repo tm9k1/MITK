@@ -146,21 +146,39 @@ mitk::Blosc2IO::Blosc2IO()
   this->RegisterService();
 }
 
+mitk::IFileIO::ConfidenceLevel mitk::Blosc2IO::GetReaderConfidenceLevel() const
+{
+  if (AbstractFileIO::GetReaderConfidenceLevel() == Unsupported)
+    return Unsupported;
+
+  Blosc2::LibraryEnvironment blosc2;
+
+  auto schunk = blosc2_schunk_open(this->GetLocalFileName().c_str());
+
+  if (schunk == nullptr)
+    return Unsupported;
+
+  bool hasBlosc2NDimMetalayer = blosc2_meta_exists(schunk, "b2nd") != BLOSC2_ERROR_NOT_FOUND;
+
+  blosc2_schunk_free(schunk);
+
+  return hasBlosc2NDimMetalayer
+    ? Supported
+    : Unsupported;
+}
+
+mitk::IFileIO::ConfidenceLevel mitk::Blosc2IO::GetWriterConfidenceLevel() const
+{
+  return Unsupported;
+}
+
 std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
 {
-  fs::path filename = this->GetInputLocation();
-
-  if (filename.empty())
-    mitkThrow() << "Filename of Blosc2 NDim file not set!";
-
-  if (!fs::exists(filename))
-    mitkThrow() << "File " << filename << "\" does not exist!";
-
   Blosc2::LibraryEnvironment blosc2;
   Blosc2::SuggestNumberOfThreads(4);
 
   b2nd_array_t* array = nullptr;
-  Blosc2::ThrowOnError(b2nd_open(this->GetInputLocation().c_str(), &array));
+  Blosc2::ThrowOnError(b2nd_open(this->GetLocalFileName().c_str(), &array));
 
   try
   {
@@ -194,32 +212,6 @@ std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
 
 void mitk::Blosc2IO::Write()
 {
-  auto input = dynamic_cast<const Image*>(this->GetInput());
-
-  if (input == nullptr)
-    mitkThrow() << "Invalid input for writing!";
-
-  auto* stream = this->GetOutputStream();
-  std::ofstream fileStream;
-
-  if (stream == nullptr)
-  {
-    auto filename = this->GetOutputLocation();
-
-    if (filename.empty())
-      mitkThrow() << "Neither an output stream nor an output file or directory name was specified!";
-
-    fileStream.open(filename); // TODO: Can be directory
-
-    if (!fileStream.is_open())
-      mitkThrow() << "Could not open file \"" << filename << "\" for writing!";
-
-    stream = &fileStream;
-  }
-
-  if (!stream->good())
-    mitkThrow() << "Stream for writing is not good!";
-
   // TODO
 }
 
