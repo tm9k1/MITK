@@ -19,7 +19,6 @@ found in the LICENSE file.
 #include <fstream>
 #include <thread>
 
-#include <blosc2.h>
 #include <b2nd.h>
 
 namespace Blosc2
@@ -53,9 +52,10 @@ namespace Blosc2
 
 namespace
 {
-  // https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
   mitk::PixelType CreatePixelType(std::string typestr)
   {
+    // typestr: https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
+
     if (typestr.size() < 3)
       mitkThrow() << "Unexpected type string: \"" << typestr << "\"!";
 
@@ -76,7 +76,7 @@ namespace
 
     switch (type)
     {
-      case 'i':
+      case 'i': // integer
         switch (size)
         {
           case 1:
@@ -89,7 +89,7 @@ namespace
             mitkThrow() << "Unsupported signed integer size: " << size << '!';
         }
 
-      case 'u':
+      case 'u': // unsigned integer
         switch (size)
         {
           case 1:
@@ -102,7 +102,7 @@ namespace
             mitkThrow() << "Unsupported unsigned integer size: " << size << '!';
         }
 
-      case 'f':
+      case 'f': // floating point
         switch (size)
         {
           case 4:
@@ -118,25 +118,12 @@ namespace
     }
   }
 
-  std::vector<unsigned int> GetDimensionsFromShape(const int64_t* shape, int8_t ndim, bool eliminateFlatDimensions = true)
+  std::vector<unsigned int> GetDimensionsFromShape(const int64_t* shape, int8_t ndim)
   {
-    int numFlatDimensions = 0;
-
-    if (eliminateFlatDimensions)
-    {
-      for (int i = 0; i < ndim; ++i)
-      {
-        if (shape[i] != 1)
-          break;
-
-        ++numFlatDimensions;
-      }
-    }
-
     std::vector<unsigned int> dimensions;
-    dimensions.reserve(ndim - numFlatDimensions);
+    dimensions.reserve(ndim);
 
-    for (int i = ndim - 1; i >= numFlatDimensions; --i)
+    for (int i = ndim - 1; i >= 0; --i)
       dimensions.push_back(static_cast<unsigned int>(shape[i]));
 
     return dimensions;
@@ -164,74 +151,44 @@ std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
   fs::path filename = this->GetInputLocation();
 
   if (filename.empty())
-    mitkThrow() << "Filename of Blosc2 file not set!";
+    mitkThrow() << "Filename of Blosc2 NDim file not set!";
 
   if (!fs::exists(filename))
-    mitkThrow() << "File or directory \"" << filename << "\" does not exist!";
-
-  if (fs::is_directory(filename))
-  {
-    filename = filename / "chunks.b2frame";
-
-    if (!fs::exists(filename))
-      mitkThrow() << "File \"" << filename << "\" does not exist!";
-  }
+    mitkThrow() << "File " << filename << "\" does not exist!";
 
   Blosc2::LibraryEnvironment blosc2;
   Blosc2::SuggestNumberOfThreads(4);
 
-  auto schunk = blosc2_schunk_open(this->GetInputLocation().c_str());
+  b2nd_array_t* array = nullptr;
+  Blosc2::ThrowOnError(b2nd_open(this->GetInputLocation().c_str(), &array));
 
-  if (schunk == nullptr)
-    mitkThrow() << "Could not open super-chunk from file \"" << this->GetInputLocation() << "\"!";
-
-  if (blosc2_meta_exists(schunk, "b2nd") != BLOSC2_ERROR_NOT_FOUND)
+  try
   {
-    Blosc2::ThrowOnError(blosc2_schunk_free(schunk));
+    Blosc2::ThrowOnError(b2nd_print_meta(array));
 
-    b2nd_array_t* array = nullptr;
-    Blosc2::ThrowOnError(b2nd_open(this->GetInputLocation().c_str(), &array));
+    if (array->dtype_format != DTYPE_NUMPY_FORMAT)
+      mitkThrow() << "Unknown data type format (expected DTYPE_NUMPY_FORMAT [0]): " << array->dtype_format << "!";
 
-    try
+    auto pixelType = CreatePixelType(array->dtype);
+    auto dimensions = GetDimensionsFromShape(array->shape, array->ndim);
+    auto bufferSize = CalculatePixelBufferSize(pixelType, dimensions);
+
+    auto image = Image::New();
+    image->Initialize(pixelType, dimensions.size(), dimensions.data());
+
     {
-      Blosc2::ThrowOnError(b2nd_print_meta(array));
-
-      if (array->dtype_format != DTYPE_NUMPY_FORMAT)
-        mitkThrow() << "Unknown data type format (expected DTYPE_NUMPY_FORMAT [0]): " << array->dtype_format << "!";
-
-      auto pixelType = CreatePixelType(array->dtype);
-      auto dimensions = GetDimensionsFromShape(array->shape, array->ndim);
-      auto bufferSize = CalculatePixelBufferSize(pixelType, dimensions);
-
-      auto image = Image::New();
-      image->Initialize(pixelType, dimensions.size(), dimensions.data());
-
-      {
-        ImageWriteAccessor writeAccessor(image);
-        b2nd_to_cbuffer(array, writeAccessor.GetData(), bufferSize);
-      }
-
-      Blosc2::ThrowOnError(b2nd_free(array));
-
-      return { image };
+      ImageWriteAccessor writeAccessor(image);
+      Blosc2::ThrowOnError(b2nd_to_cbuffer(array, writeAccessor.GetData(), bufferSize));
     }
-    catch (Exception& e)
-    {
-      b2nd_free(array);
-      mitkReThrow(e);
-    }
+
+    Blosc2::ThrowOnError(b2nd_free(array));
+
+    return { image };
   }
-  else
+  catch (Exception& e)
   {
-    try
-    {
-      mitkThrow() << "MITK only supports Blosc2 NDim images!";
-    }
-    catch (Exception& e)
-    {
-      blosc2_schunk_free(schunk);
-      mitkReThrow(e);
-    }
+    b2nd_free(array);
+    mitkReThrow(e);
   }
 }
 
