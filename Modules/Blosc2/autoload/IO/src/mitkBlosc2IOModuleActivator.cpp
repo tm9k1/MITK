@@ -29,7 +29,7 @@ void mitk::Blosc2IOModuleActivator::Load(us::ModuleContext* context)
   auto mimeTypes = MitkBlosc2IOMimeTypes::Get();
 
   us::ServiceProperties props;
-  props[us::ServiceConstants::SERVICE_RANKING()] = 10;
+  props[us::ServiceConstants::SERVICE_RANKING()] = 0;
 
   for (auto mimeType : mimeTypes)
     context->RegisterService(mimeType, props);

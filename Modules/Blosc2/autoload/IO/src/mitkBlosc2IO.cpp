@@ -14,6 +14,7 @@ found in the LICENSE file.
 #include <mitkBlosc2IOMimeTypes.h>
 
 #include <mitkFileSystem.h>
+#include <mitkImageReadAccessor.h>
 #include <mitkImageWriteAccessor.h>
 
 #include <fstream>
@@ -118,6 +119,37 @@ namespace
     }
   }
 
+  char* CreateDType(const mitk::PixelType& pixelType)
+  {
+    if (pixelType.GetNumberOfComponents() != 1)
+      mitkThrow() << "Multi-component pixel types are not supported!";
+
+    switch (pixelType.GetComponentType())
+    {
+      case itk::IOComponentEnum::CHAR:
+        return "|i1";
+      case itk::IOComponentEnum::SHORT:
+        return "<i2";
+      case itk::IOComponentEnum::INT:
+        return "<i4";
+
+      case itk::IOComponentEnum::UCHAR:
+        return "|u1";
+      case itk::IOComponentEnum::USHORT:
+        return "<u2";
+      case itk::IOComponentEnum::UINT:
+        return "<u4";
+
+      case itk::IOComponentEnum::FLOAT:
+        return "<f4";
+      case itk::IOComponentEnum::DOUBLE:
+        return "<f8";
+
+      default:
+        mitkThrow() << "Unsupported pixel type: \"" << pixelType.GetComponentTypeAsString() << "\"!";
+    }
+  }
+
   std::vector<unsigned int> GetDimensionsFromShape(const int64_t* shape, int8_t ndim)
   {
     std::vector<unsigned int> dimensions;
@@ -141,7 +173,7 @@ namespace
 }
 
 mitk::Blosc2IO::Blosc2IO()
-  : AbstractFileIO(Image::GetStaticNameOfClass(), MitkBlosc2IOMimeTypes::BLOSC2_MIMETYPE(), "Blosc2")
+  : AbstractFileIO(Image::GetStaticNameOfClass(), MitkBlosc2IOMimeTypes::BLOSC2_MIMETYPE(), "Blosc2 NDim")
 {
   this->RegisterService();
 }
@@ -169,7 +201,24 @@ mitk::IFileIO::ConfidenceLevel mitk::Blosc2IO::GetReaderConfidenceLevel() const
 
 mitk::IFileIO::ConfidenceLevel mitk::Blosc2IO::GetWriterConfidenceLevel() const
 {
-  return Unsupported;
+  if (AbstractFileIO::GetWriterConfidenceLevel() == Unsupported)
+    return Unsupported;
+
+  auto image = dynamic_cast<const Image*>(this->GetInput());
+
+  if (image == nullptr)
+    return Unsupported;
+
+  if (std::string(image->GetNameOfClass()) != "Image")
+    return Unsupported;
+
+  if (!image->IsInitialized())
+    return Unsupported;
+
+  if (image->GetPixelType().GetNumberOfComponents() != 1)
+    return Unsupported;
+
+  return Supported;
 }
 
 std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
@@ -199,8 +248,7 @@ std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
       Blosc2::ThrowOnError(b2nd_to_cbuffer(array, writeAccessor.GetData(), bufferSize));
     }
 
-    Blosc2::ThrowOnError(b2nd_free(array));
-
+    b2nd_free(array);
     return { image };
   }
   catch (Exception& e)
@@ -212,7 +260,77 @@ std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
 
 void mitk::Blosc2IO::Write()
 {
-  // TODO
+  auto image = dynamic_cast<const Image*>(this->GetInput());
+  auto ndim = static_cast<int8_t>(image->GetDimension());
+
+  std::vector<int64_t> shape;
+  shape.reserve(ndim);
+
+  std::vector<int32_t> chunkshape;
+  chunkshape.reserve(ndim);
+
+  std::vector<int32_t> blockshape;
+  blockshape.reserve(ndim);
+
+  for (int i = ndim - 1; i >= 0; --i)
+  {
+    auto dim = static_cast<int32_t>(image->GetDimension(i));
+    shape.push_back(dim);
+
+    chunkshape.push_back(std::min(dim, 64));
+    blockshape.push_back(std::min(dim, 16));
+  }
+
+  if (image->GetTimeGeometry()->CountTimeSteps() > 1)
+  {
+    chunkshape[0] = 1;
+    blockshape[0] = 1;
+  }
+
+  auto typesize = static_cast<int32_t>(image->GetPixelType().GetSize());
+
+  int64_t nelem = 1;
+
+  for (auto dim : shape)
+    nelem *= dim;
+
+  int64_t size = nelem * typesize;
+
+  blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
+  cparams.compcode = BLOSC_ZSTD;
+  cparams.typesize = typesize;
+  cparams.nthreads = static_cast<int16_t>(std::max(1U, std::thread::hardware_concurrency()));
+
+  blosc2_storage b2_storage = BLOSC2_STORAGE_DEFAULTS;
+  b2_storage.contiguous = true;
+  b2_storage.cparams = &cparams;
+
+  Blosc2::LibraryEnvironment blosc2;
+  Blosc2::SuggestNumberOfThreads(cparams.nthreads);
+
+  auto ctx = b2nd_create_ctx(
+    &b2_storage,
+    ndim,
+    shape.data(),
+    chunkshape.data(),
+    blockshape.data(),
+    CreateDType(image->GetPixelType()),
+    DTYPE_NUMPY_FORMAT,
+    nullptr,
+    0);
+
+  b2nd_array_t* array = nullptr;
+
+  {
+    ImageReadAccessor readAccessor(image);
+    b2nd_from_cbuffer(ctx, &array, readAccessor.GetData(), size);
+  }
+
+  b2nd_print_meta(array);
+  b2nd_save(array, const_cast<char*>(this->GetOutputLocation().c_str()));
+
+  b2nd_free(array);
+  b2nd_free_ctx(ctx);
 }
 
 mitk::Blosc2IO* mitk::Blosc2IO::IOClone() const
