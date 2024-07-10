@@ -12,12 +12,10 @@ found in the LICENSE file.
 
 #include "mitkBlosc2IO.h"
 #include <mitkBlosc2IOMimeTypes.h>
-
 #include <mitkFileSystem.h>
 #include <mitkImageReadAccessor.h>
 #include <mitkImageWriteAccessor.h>
 
-#include <fstream>
 #include <thread>
 
 #include <b2nd.h>
@@ -30,6 +28,7 @@ namespace Blosc2
     LibraryEnvironment()
     {
       blosc2_init();
+      blosc2_set_nthreads(static_cast<int16_t>(std::max(1U, std::thread::hardware_concurrency())));
     }
 
     ~LibraryEnvironment()
@@ -42,12 +41,6 @@ namespace Blosc2
   {
     if (rc < BLOSC2_ERROR_SUCCESS)
       mitkThrow() << print_error(rc);
-  }
-
-  void SuggestNumberOfThreads(unsigned int numThreads)
-  {
-    // Note: Can be overridden by the BLOSC_NTHREADS environment variable.
-    blosc2_set_nthreads(static_cast<int16_t>(std::min(numThreads, std::max(1U, std::thread::hardware_concurrency()))));
   }
 }
 
@@ -224,7 +217,6 @@ mitk::IFileIO::ConfidenceLevel mitk::Blosc2IO::GetWriterConfidenceLevel() const
 std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
 {
   Blosc2::LibraryEnvironment blosc2;
-  Blosc2::SuggestNumberOfThreads(4);
 
   b2nd_array_t* array = nullptr;
   Blosc2::ThrowOnError(b2nd_open(this->GetLocalFileName().c_str(), &array));
@@ -260,77 +252,96 @@ std::vector<mitk::BaseData::Pointer> mitk::Blosc2IO::DoRead()
 
 void mitk::Blosc2IO::Write()
 {
+  constexpr int32_t DEFAULT_CHUNK_DIMENSION = 64;
+  constexpr int32_t DEFAULT_BLOCK_DIMENSION = 16;
+
   auto image = dynamic_cast<const Image*>(this->GetInput());
-  auto ndim = static_cast<int8_t>(image->GetDimension());
+  auto numDimensions = static_cast<int8_t>(image->GetDimension());
 
   std::vector<int64_t> shape;
-  shape.reserve(ndim);
+  shape.reserve(numDimensions);
 
-  std::vector<int32_t> chunkshape;
-  chunkshape.reserve(ndim);
+  std::vector<int32_t> chunkShape;
+  chunkShape.reserve(numDimensions);
 
-  std::vector<int32_t> blockshape;
-  blockshape.reserve(ndim);
+  std::vector<int32_t> blockShape;
+  blockShape.reserve(numDimensions);
 
-  for (int i = ndim - 1; i >= 0; --i)
+  for (int i = numDimensions - 1; i >= 0; --i)
   {
-    auto dim = static_cast<int32_t>(image->GetDimension(i));
-    shape.push_back(dim);
+    auto dimension = static_cast<int32_t>(image->GetDimension(i));
+    shape.push_back(dimension);
 
-    chunkshape.push_back(std::min(dim, 64));
-    blockshape.push_back(std::min(dim, 16));
+    chunkShape.push_back(std::min(dimension, DEFAULT_CHUNK_DIMENSION));
+    blockShape.push_back(std::min(dimension, DEFAULT_BLOCK_DIMENSION));
   }
 
   if (image->GetTimeGeometry()->CountTimeSteps() > 1)
   {
-    chunkshape[0] = 1;
-    blockshape[0] = 1;
+    chunkShape[0] = 1;
+    blockShape[0] = 1;
   }
 
-  auto typesize = static_cast<int32_t>(image->GetPixelType().GetSize());
+  auto pixelSizeInBytes = static_cast<int32_t>(image->GetPixelType().GetSize());
 
-  int64_t nelem = 1;
+  int64_t numPixels = 1;
 
-  for (auto dim : shape)
-    nelem *= dim;
+  for (auto dimension : shape)
+    numPixels *= dimension;
 
-  int64_t size = nelem * typesize;
+  int64_t imageSizeInBytes = numPixels * pixelSizeInBytes;
+
+  Blosc2::LibraryEnvironment blosc2;
 
   blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
   cparams.compcode = BLOSC_ZSTD;
-  cparams.typesize = typesize;
-  cparams.nthreads = static_cast<int16_t>(std::max(1U, std::thread::hardware_concurrency()));
+  cparams.typesize = pixelSizeInBytes;
+  cparams.nthreads = blosc2_get_nthreads();
 
   blosc2_storage b2_storage = BLOSC2_STORAGE_DEFAULTS;
   b2_storage.contiguous = true;
   b2_storage.cparams = &cparams;
 
-  Blosc2::LibraryEnvironment blosc2;
-  Blosc2::SuggestNumberOfThreads(cparams.nthreads);
-
   auto ctx = b2nd_create_ctx(
     &b2_storage,
-    ndim,
+    numDimensions,
     shape.data(),
-    chunkshape.data(),
-    blockshape.data(),
+    chunkShape.data(),
+    blockShape.data(),
     CreateDType(image->GetPixelType()),
     DTYPE_NUMPY_FORMAT,
     nullptr,
     0);
 
+  if (ctx == nullptr)
+    mitkThrow() << "Could not create b2nd params!";
+
   b2nd_array_t* array = nullptr;
 
+  try
   {
-    ImageReadAccessor readAccessor(image);
-    b2nd_from_cbuffer(ctx, &array, readAccessor.GetData(), size);
+    {
+      ImageReadAccessor readAccessor(image);
+      Blosc2::ThrowOnError(b2nd_from_cbuffer(ctx, &array, readAccessor.GetData(), imageSizeInBytes));
+    }
+
+    Blosc2::ThrowOnError(b2nd_print_meta(array));
+
+    fs::remove(this->GetOutputLocation());
+    Blosc2::ThrowOnError(b2nd_save(array, const_cast<char*>(this->GetOutputLocation().c_str())));
+
+    b2nd_free(array);
+    b2nd_free_ctx(ctx);
   }
+  catch (Exception& e)
+  {
+    if (array != nullptr)
+      b2nd_free(array);
 
-  b2nd_print_meta(array);
-  b2nd_save(array, const_cast<char*>(this->GetOutputLocation().c_str()));
+    b2nd_free_ctx(ctx);
 
-  b2nd_free(array);
-  b2nd_free_ctx(ctx);
+    mitkReThrow(e);
+  }
 }
 
 mitk::Blosc2IO* mitk::Blosc2IO::IOClone() const
