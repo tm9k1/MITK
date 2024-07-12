@@ -17,6 +17,7 @@ mitkFunctionAddExternalProject(NAME MatchPoint OFF ADVANCED DEPENDS Boost ITK DO
 mitkFunctionAddExternalProject(NAME nlohmann_json ON ADVANCED)
 mitkFunctionAddExternalProject(NAME httplib ON DEPENDS ZLIB)
 mitkFunctionAddExternalProject(NAME Blosc2 ON ADVANCED DEPENDS ZLIB lz4)
+mitkFunctionAddExternalProject(NAME msgpack-cxx ON ADVANCED DEPENDS Boost)
 
 if(MITK_USE_Qt6)
  mitkFunctionAddExternalProject(NAME Qt6Qwt6 ON ADVANCED DEPENDS Qt6)
