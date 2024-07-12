@@ -46,7 +46,7 @@ namespace Blosc2
 
 namespace
 {
-  mitk::PixelType CreatePixelType(std::string typestr)
+  mitk::PixelType CreatePixelType(const std::string& typestr)
   {
     // typestr: https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
 
