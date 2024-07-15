@@ -28,7 +28,6 @@
 #include <mitkImageWriteAccessor.h>
 
 using namespace mitk;
-
 using itk::DataObject;
 using itk::LightObject;
 using itk::SmartPointer;
@@ -99,11 +98,9 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
      * into a python byte array. The byte array can later be converted
      * into a numpy array with the frombuffer method.
      */
-    static PyObject*
-    mitk_SetImageFromArray( PyObject *SWIGUNUSEDPARM(self), PyObject *args )
+    static PyObject* mitk_SetImageFromArray(PyObject *SWIGUNUSEDPARM(self), PyObject *args)
     {
         PyObject * pyImage = NULL;
-
         const void *buffer;
         Py_ssize_t buffer_len;
         Py_buffer  pyBuffer;
@@ -162,9 +159,9 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
         }
         try
         {
-            mitk::ImageWriteAccessor writeAccess(mitkImage, mitkImage->GetVolumeData(0));
+            mitk::ImageWriteAccessor writeAccess(mitkImage);
             mitkBufferPtr = writeAccess.GetData();
-            pixelSize= mitkImage->GetPixelType().GetBitsPerComponent() / 8;
+            pixelSize = mitkImage->GetPixelType().GetBitsPerComponent() / 8;
             std::cout << "pixelSize "<< pixelSize << std::endl;
         }
         catch( const std::exception &e )
@@ -194,7 +191,6 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
             PyErr_SetString( PyExc_RuntimeError, "Size mismatch of image and Buffer." );
             goto fail;
         }
-
         memcpy((void *)mitkBufferPtr, buffer, len );
         PyBuffer_Release( &pyBuffer );
         Py_RETURN_NONE;
@@ -227,14 +223,6 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
         }*/
     }
 
-    %typemap(out) namespace ## :: ## class_name {
-        std::cout << "class_name" <<std::endl;
-        /*$result = SWIG_NewPointerObj(SWIG_as_voidptr($1), $1_descriptor, 1);
-        if ($1) {
-                $1->Register();
-        }*/
-    }
-
     %typemap(out) namespace ## :: ## class_name ## ::Pointer 
     {
         std::cout << "namespace##::##class_name::Pointer" <<std::endl;
@@ -242,6 +230,19 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
         $result = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), $descriptor(namespace::class_name *), 1);                
         if (ptr) {
             ptr->Register();
+        }
+    }
+    
+    %typemap(out) std::vector<namespace ## :: ## class_name ## ::Pointer> {
+        std::cout << "Vector namespace##::##class_name::Pointer" <<std::endl;
+        /*PyObject**/ $result = PyList_New($1.size());
+        for (size_t i = 0; i < $1.size(); ++i) {
+            namespace##::##class_name * ptr = ($1[i]).GetPointer();
+            if (ptr) {
+                ptr->Register();
+                PyObject* pyObj = SWIG_NewPointerObj(SWIG_as_voidptr(ptr), $descriptor(namespace::class_name *), 1);
+                PyList_SetItem($result, i, pyObj);
+            }
         }
     }
 
@@ -254,13 +255,13 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
         };
     }
 
-
     %ignore namespace ## :: ## class_name ## :: ## ~class_name ## ;
     %ignore namespace ## :: ## class_name ## _Pointer;
 
 %enddef
 
 MITK_CLASS_SWIG_MACRO(mitk, Image)
+
 
 %inline{
 
@@ -270,7 +271,7 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
         image->Initialize(pixelType, shape.size(), shape.data());
         return image;
     }
-
+    
     mitk::Image::Pointer GetImage() //for test, delete later
     {
         std::string filename = "/home/a178n/DKFZ/MITK_ws3/example_ct.nii.gz";
@@ -285,10 +286,6 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
         return mitkImage.GetPointer();
     }
 
-    std::vector<mitk::Image::Pointer> GetImageVector() //for test, delete later
-    {
-        return {GetImage()};
-    }
 }
 
 %extend mitk::Image
@@ -319,11 +316,21 @@ MITK_CLASS_SWIG_MACRO(mitk, Image)
         //PyArray_ENABLEFLAGS((PyArrayObject*)result, NPY_ARRAY_OWNDATA);
         return result;
     }
+}
 
-    %pythoncode %{
-        def SayHi(self):
-            print('Hi!')
-    %}
+%extend mitk::IOUtil
+{
+    public:
+    static std::vector<mitk::Image::Pointer> imread(const std::string& filename)
+    {
+        auto images = mitk::IOUtil::Load(filename);
+        std::vector<mitk::Image::Pointer> result;
+        for(auto& image: images)
+        {
+            result.push_back(dynamic_cast<mitk::Image*>(image.GetPointer()));
+        }
+        return result;
+    }
 }
 
 mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfComponents);
@@ -333,6 +340,7 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
 %ignore mitk::Image::GetPixelType;
 %ignore mitk::Image::GetChannelDescriptor;
 %ignore mitk::IOUtil::Save;
+%ignore mitk::IOUtil::Load;
 %rename(imsave) mitk::IOUtil::Save(const mitk::BaseData*, const std::string&, bool);
 
 %include <itkMacro.h>
@@ -344,8 +352,7 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
 %include <mitkImage.h>
 %include <mitkIOUtil.h>
 
-//%template(VectorImageP) std::vector<mitk::Image::Pointer>;
-%template(imread) mitk::IOUtil::Load<mitk::Image>;
+%template(VectorImageP) std::vector<mitk::Image::Pointer>;
 
 %pythoncode %{
 
@@ -355,9 +362,9 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
     except ImportError:
         HAVE_NUMPY = False
 
-
-    def GetName():
-        return 'pyMITK'
+    
+    def SayHi(self):
+        print('Hi from pyMITK!')
 
 
     def _get_mitk_pixelid(numpy_array_type):
@@ -386,29 +393,29 @@ mitk::PixelType MakePixelTypeFromTypeID(int componentTypeID, int numberOfCompone
             raise TypeError('dtype: {0} is not supported.'.format(numpy_array_type.dtype))
 
 
-    def GetImageFromArray(arr: numpy.ndarray, isVector=False, isShared = False):
+    def GetImageFromArray(arr: numpy.ndarray, isVector:bool=False, isShared:bool=False):
         """
         Get a MITK Image from a numpy array. If isVector is True, then a 3D array will be treated as a 2D vector image,
-        otherwise it will be treated as a 3D image. If isShared is True, then the MITK Image and numpy array would point
-        to same underlying buffer.
+        otherwise it will be treated as a 3D image. If isShared is True, then the new MITK Image and numpy array would 
+        point to same underlying buffer.
         """
-
         if not HAVE_NUMPY:
             raise ImportError('Numpy not available.')
 
         assert arr.ndim in ( 2, 3, 4 ), \
         "Only arrays of 2, 3 or 4 dimensions are supported."
 
-        id = _get_mitk_pixelid(arr)        
+        id = _get_mitk_pixelid(arr)
+        '''
         if (arr.ndim == 3 and isVector ) or (arr.ndim == 4):
             pixelType=MakePixelTypeFromTypeID(id, arr.shape[-1])
             newShape=VectorUInt32(arr.shape[-2::-1])
             img = MakeImage(pixelType, newShape)
         elif arr.ndim in ( 2, 3 ):
-            pixelType=MakePixelTypeFromTypeID(id, 1)
-            newShape=VectorUInt32(arr.shape[::-1])
-            img = MakeImage(pixelType, newShape)
-
+        '''
+        pixelType = MakePixelTypeFromTypeID(id, 1)
+        newShape = VectorUInt32(arr.shape[::-1])
+        img = MakeImage(pixelType, newShape)
         _SetImageFromArray(arr.tobytes(), img)
         if isShared:
             arr.data = img.GetAsNumpy().data
